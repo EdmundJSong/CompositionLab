@@ -1461,7 +1461,7 @@
       if (aN.size === 0 || playing) return;
       if (!toneStarted) { await Tone.start(); toneStarted = true; }
       if (synth) synth.dispose();
-      synth = new Tone.Synth({ oscillator: { type: WAVES[waveIdx][0] }, envelope: { attack: 0.01, decay: 1.2, sustain: 0.1, release: 1.5 } }).toDestination();
+      synth = new Tone.Synth({ oscillator: { type: WAVES[waveIdx][0] }, envelope: { attack: 0.008, decay: 1.2, sustain: 0.1, release: 0.8 } }).toDestination();
       playing = true; render();
       const nodes = genNodes();
       const ap = [...new Set(nodes.filter(n => aN.has(n.id)).map(n => n.pitch))];
