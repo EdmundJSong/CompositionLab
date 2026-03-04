@@ -619,12 +619,80 @@
       transition: all 0.2s; text-decoration: none;
     }
     .home-btn:hover { border-color: #d4912a; color: #d4912a; }
+
+    /* View toggle */
+    .view-toggle {
+      position: fixed; top: 12px; right: 12px; z-index: 200;
+      width: 32px; height: 32px; border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.08); background: #141414;
+      color: #666; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s;
+    }
+    .view-toggle:hover { border-color: #d4912a; color: #d4912a; }
+    .view-toggle svg { width: 16px; height: 16px; fill: currentColor; }
+
+    /* ═══ DESKTOP SIDEBAR LAYOUT ═══ */
+    @media (min-width: 681px) {
+      body.sidebar-layout {
+        flex-direction: row;
+        overflow: hidden;
+      }
+      body.sidebar-layout h1 { display: none; }
+
+      body.sidebar-layout .sidebar {
+        display: flex !important;
+        flex-direction: column;
+        width: 220px; min-width: 220px;
+        height: 100%; overflow-y: auto;
+        background: #0e0e0e;
+        border-right: 1px solid rgba(255,255,255,0.04);
+        padding: 12px; gap: 8px;
+        flex-shrink: 0;
+      }
+      body.sidebar-layout .sidebar .sb-title {
+        font-size: 14px; font-weight: 500; letter-spacing: 0.25em;
+        color: #706860; text-align: center; padding: 8px 0;
+        background: linear-gradient(90deg, #9a8a78, #d4912a);
+        -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      }
+      body.sidebar-layout .sidebar .panel {
+        flex-wrap: wrap; justify-content: center;
+      }
+      body.sidebar-layout .drow,
+      body.sidebar-layout .drow2 {
+        display: none !important;
+      }
+      body.sidebar-layout .canvas-area {
+        flex: 1; height: 100%;
+      }
+      body.sidebar-layout .tonerow {
+        position: absolute; bottom: 0; left: 220px; right: 0;
+      }
+      body.sidebar-layout .home-btn {
+        position: relative; top: auto; left: auto;
+        width: 100%; height: 28px; border-radius: 6px;
+        font-size: 11px; letter-spacing: 1px; color: #555;
+      }
+    }
+
+    .sidebar { display: none; }
   </style>
 </head>
 
 <body>
 
-  <a class="home-btn" href="index.html" title="Home">‹</a>
+  <a class="home-btn" href="index.html" title="Home" id="homeBtn">‹</a>
+
+  <!-- Desktop sidebar (shown when sidebar-layout class on body) -->
+  <div class="sidebar" id="sidebar">
+    <a class="home-btn" href="index.html" title="Home" style="text-decoration:none">‹ HOME</a>
+    <div class="sb-title">TONNETZ</div>
+    <div class="panel" id="sbPanel1"></div>
+    <div class="panel" id="sbPanel2"></div>
+    <div class="panel" id="sbPanel3"></div>
+    <div id="sbDynamic"></div>
+  </div>
 
   <h1>TONNETZ</h1>
 
@@ -687,6 +755,9 @@
   <div class="canvas-area">
     <div class="canvas-row">
       <canvas id="cv"></canvas>
+      <!-- Hidden input for direct-on-canvas typing (IME appears natively) -->
+      <input type="text" id="canvasInput" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+        style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);opacity:0.01;width:1px;height:1px;border:none;outline:none;padding:0;font-size:32px;pointer-events:none;z-index:5;caret-color:transparent;">
       <div class="dens-slider-wrap" id="densWrap">
         <div class="dens-track" id="densTrack">
           <div class="dens-thumb" id="densThumb"></div>
@@ -700,6 +771,12 @@
   </div>
 
   <div class="tonerow" id="tonerow"></div>
+
+  <!-- View toggle -->
+  <button class="view-toggle" id="viewToggle" title="Toggle mobile/desktop view">
+    <svg id="icoPhone" viewBox="0 0 24 24"><path d="M7 1h10a2 2 0 012 2v18a2 2 0 01-2 2H7a2 2 0 01-2-2V3a2 2 0 012-2zm0 2v14h10V3H7zm3 16h4v1h-4v-1z"/></svg>
+    <svg id="icoDesktop" viewBox="0 0 24 24" style="display:none"><path d="M3 4h18a1 1 0 011 1v11a1 1 0 01-1 1H3a1 1 0 01-1-1V5a1 1 0 011-1zm1 2v9h16V6H4zm4 13h8v1H8v-1z"/></svg>
+  </button>
 
   <!-- Mobile -->
   <button class="fab" id="fab" onclick="toggleSheet()">&#x2699;</button>
@@ -809,6 +886,12 @@
     let sheetOpen = false;
     let toneRowOrder = null;
     let canvasDisabled = false;
+    let ghostIdx = 0, ghostAlpha = 0, ghostPhase = 0; /* rotating ghost */
+    const GHOST_CHARS = ["永", "あ", "한", "A"];
+    const GHOST_HOLD = 2500, GHOST_FADE = 800; /* ms */
+    let cursorVisible = false, cursorBlink = null; /* blinking cursor */
+    let inputFocused = false;
+    let viewMode = "auto"; /* auto, mobile, desktop */
     let touches = []; /* track active touches for pinch/rotate */
     let pinchStartDist = null, pinchStartSc = null;
     let pinchStartAngle = null, pinchStartRot = null;
@@ -818,6 +901,119 @@
     function cRot() { return mode === "type" ? typeRot : drawRot; }
     function setCPos(p) { if (mode === "type") typePos = p; else drawPos = p; }
     function wrap(v, mn, mx) { const r = mx - mn; let o = v; while (o < mn) o += r; while (o > mx) o -= r; return o; }
+
+    /* ── Canvas direct typing ── */
+    const canvasInput = document.getElementById("canvasInput");
+    canvasInput.addEventListener("compositionstart", () => { isComposing = true; });
+    canvasInput.addEventListener("compositionend", e => {
+      isComposing = false;
+      const v = e.target.value;
+      if (v.length > 0) { typeCh = v.slice(-1); canvasInput.value = typeCh; typePos = { x: W / 2, y: H / 2 }; toneRowOrder = null; update(); }
+    });
+    canvasInput.addEventListener("input", e => {
+      if (!isComposing) {
+        const v = e.target.value;
+        if (v.length > 0) { typeCh = v.slice(-1); canvasInput.value = typeCh; typePos = { x: W / 2, y: H / 2 }; toneRowOrder = null; update(); }
+      }
+    });
+    function focusCanvasInput() {
+      if (mode === "type") {
+        canvasInput.style.pointerEvents = "auto";
+        canvasInput.focus();
+        setTimeout(() => { canvasInput.style.pointerEvents = "none"; }, 50);
+      }
+    }
+
+    /* ── Rotating ghost animation ── */
+    let ghostRAF = null, ghostStart = null;
+    function animateGhost(ts) {
+      if (!ghostStart) ghostStart = ts;
+      const cycle = GHOST_FADE + GHOST_HOLD + GHOST_FADE;
+      const elapsed = (ts - ghostStart) % (cycle * GHOST_CHARS.length);
+      ghostIdx = Math.floor(elapsed / cycle);
+      const phase = elapsed - ghostIdx * cycle;
+      if (phase < GHOST_FADE) ghostAlpha = phase / GHOST_FADE;
+      else if (phase < GHOST_FADE + GHOST_HOLD) ghostAlpha = 1;
+      else ghostAlpha = 1 - (phase - GHOST_FADE - GHOST_HOLD) / GHOST_FADE;
+      ghostAlpha *= 0.07; /* subtle */
+      if (!typeCh) render();
+      ghostRAF = requestAnimationFrame(animateGhost);
+    }
+    function startGhostAnim() { if (!ghostRAF) ghostRAF = requestAnimationFrame(animateGhost); }
+    function stopGhostAnim() { if (ghostRAF) { cancelAnimationFrame(ghostRAF); ghostRAF = null; ghostStart = null; } }
+    function drawGhost(ctx) {
+      if (typeCh) return; /* hide when character is typed */
+      ctx.save();
+      ctx.globalAlpha = ghostAlpha;
+      ctx.fillStyle = "#d4912a";
+      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      const sz = Math.min(W, H) * 0.55;
+      ctx.font = sz + 'px "Inter", "Noto Sans CJK", sans-serif';
+      ctx.fillText(GHOST_CHARS[ghostIdx % GHOST_CHARS.length], W / 2, H / 2);
+      ctx.restore();
+    }
+
+    /* ── Blinking cursor ── */
+    function startCursorBlink() {
+      inputFocused = true; cursorVisible = true;
+      clearInterval(cursorBlink);
+      cursorBlink = setInterval(() => { cursorVisible = !cursorVisible; if (!typeCh) render(); }, 530);
+    }
+    function stopCursorBlink() {
+      inputFocused = false; cursorVisible = false;
+      clearInterval(cursorBlink); cursorBlink = null;
+    }
+    function drawCursor(ctx) {
+      if (!inputFocused || !cursorVisible || typeCh) return;
+      ctx.save();
+      ctx.strokeStyle = "#d4912a"; ctx.lineWidth = 2; ctx.globalAlpha = 0.8;
+      const h = Math.min(W, H) * 0.12;
+      ctx.beginPath();
+      ctx.moveTo(W / 2, H / 2 - h);
+      ctx.lineTo(W / 2, H / 2 + h);
+      ctx.stroke();
+      ctx.restore();
+    }
+    canvasInput.addEventListener("focus", startCursorBlink);
+    canvasInput.addEventListener("blur", stopCursorBlink);
+
+    /* ── View toggle ── */
+    function getEffectiveView() {
+      if (viewMode !== "auto") return viewMode;
+      return window.innerWidth <= 680 ? "mobile" : "desktop";
+    }
+    function applyViewMode() {
+      const eff = getEffectiveView();
+      const isSidebar = eff === "desktop";
+      document.body.classList.toggle("sidebar-layout", isSidebar);
+      document.getElementById("homeBtn").style.display = isSidebar ? "none" : "";
+      /* update toggle icon */
+      document.getElementById("icoPhone").style.display = (eff === "mobile") ? "block" : "none";
+      document.getElementById("icoDesktop").style.display = (eff === "desktop") ? "block" : "none";
+      if (isSidebar) buildSidebar();
+      setTimeout(() => { if (typeof resize === "function") resize(); }, 50);
+    }
+    document.getElementById("viewToggle").onclick = () => {
+      const cur = getEffectiveView();
+      viewMode = cur === "mobile" ? "desktop" : "mobile";
+      applyViewMode();
+    };
+    function buildSidebar() {
+      /* Clone controls into sidebar panels */
+      const sb1 = document.getElementById("sbPanel1");
+      const sb2 = document.getElementById("sbPanel2");
+      const sb3 = document.getElementById("sbPanel3");
+      const sbD = document.getElementById("sbDynamic");
+      if (!sb1) return;
+      /* Panel 1: mode buttons + tonic */
+      sb1.innerHTML = document.querySelector("#drow1 .panel:nth-child(1)").innerHTML;
+      /* Panel 2: reset + nudge */
+      sb2.innerHTML = document.querySelector("#drow1 .panel:nth-child(2)").innerHTML;
+      /* Panel 3: wave + play */
+      sb3.innerHTML = document.querySelector("#drow1 .panel:nth-child(3)").innerHTML;
+      /* Dynamic: row2 controls (size, tilt, lock etc.) */
+      sbD.innerHTML = document.getElementById("drow2").innerHTML;
+    }
 
     function getCols() { return density; }
 
@@ -987,16 +1183,9 @@
         }
       });
 
-      /* empty state hint */
-      if (aN.size === 0 && !typeCh && dPaths.length === 0 && !curPath) {
-        ctx.save();
-        ctx.fillStyle = "rgba(180, 168, 148, 0.4)";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.font = '16px "Inter", sans-serif';
-        ctx.fillText("Type a character or switch to Draw mode to begin.", W / 2, H / 2 + 60);
-        ctx.restore();
-      }
+      /* ghost watermark */
+      drawGhost(ctx);
+      drawCursor(ctx);
 
       /* floating indicators */
       ctx.save(); ctx.textAlign = "center"; ctx.textBaseline = "middle";
@@ -1181,11 +1370,6 @@
       r2.className = "drow2 panel-anim"; // smooth entrance
 
       if (mode === "type") {
-        const inp = document.createElement("input"); inp.type = "text"; inp.id = "charInput"; inp.value = typeCh; inp.placeholder = ""; inp.autocomplete = "off";
-        inp.addEventListener("compositionstart", () => { isComposing = true; });
-        inp.addEventListener("compositionend", e => { isComposing = false; const v = e.target.value; if (v.length > 0) { typeCh = v.slice(-1); inp.value = typeCh; typePos = { x: W / 2, y: H / 2 }; toneRowOrder = null; update(); } });
-        inp.addEventListener("input", e => { if (!isComposing) { const v = e.target.value; if (v.length > 0) { typeCh = v.slice(-1); inp.value = typeCh; typePos = { x: W / 2, y: H / 2 }; toneRowOrder = null; update(); } } });
-        r2.appendChild(inp);
         addLabeledSlider(r2, "size", "0.15", "1.8", "0.02", typeSc, function (v) { typeSc = v; showSc = true; clearTimeout(scTm); scTm = setTimeout(() => { showSc = false; render(); }, 800); update(); });
         addKnob(r2, "tilt", typeRot, function (v) { typeRot = v; showRot = true; clearTimeout(rotTm); rotTm = setTimeout(() => { showRot = false; render(); }, 800); update(); });
       } else {
@@ -1266,12 +1450,9 @@
     function buildSheetMode() {
       const el = document.getElementById("sheetMode"); el.innerHTML = "";
       if (mode === "type") {
-        const inp = document.createElement("input"); inp.type = "text"; inp.value = typeCh; inp.placeholder = ""; inp.autocomplete = "off";
-        inp.addEventListener("compositionstart", () => { isComposing = true; });
-        inp.addEventListener("compositionend", e => { isComposing = false; const v = e.target.value; if (v.length > 0) { typeCh = v.slice(-1); inp.value = typeCh; typePos = { x: W / 2, y: H / 2 }; toneRowOrder = null; update(); } });
-        inp.addEventListener("input", e => { if (!isComposing) { const v = e.target.value; if (v.length > 0) { typeCh = v.slice(-1); inp.value = typeCh; typePos = { x: W / 2, y: H / 2 }; toneRowOrder = null; update(); } } });
-        el.appendChild(inp);
-        /* size/tilt handled by two-finger pinch/rotate on canvas */
+        /* typing is now direct on canvas — no input here */
+        const hint = document.createElement("span"); hint.style.cssText = "color:#555;font-size:12px;";
+        hint.textContent = "Tap grid to type"; el.appendChild(hint);
       } else {
         const bClr = document.createElement("button"); bClr.textContent = "\u2715"; bClr.onclick = () => { dPaths = []; curPath = null; locked = false; drawSc = 1.0; drawRot = 0; drawPos = { x: W / 2, y: H / 2 }; toneRowOrder = null; buildRow2(); buildSheetMode(); update(); };
         el.appendChild(bClr);
@@ -1306,25 +1487,33 @@
     cv.addEventListener("mousedown", pDown); cv.addEventListener("mousemove", pMove); cv.addEventListener("mouseup", pUp); cv.addEventListener("mouseleave", pUp);
     cv.addEventListener("touchstart", tDown, { passive: false }); cv.addEventListener("touchmove", tMove, { passive: false }); cv.addEventListener("touchend", tUp); cv.addEventListener("touchcancel", tUp);
 
+    let dragMoved = false;
     function pDown(e) {
-      if (canvasDisabled) return; e.preventDefault(); const p = gcp(e);
+      if (canvasDisabled) return;
+      if (mode !== "type") e.preventDefault();
+      const p = gcp(e);
+      dragMoved = false;
       if (mode === "draw" && !locked) { curPath = [p]; }
       else { dragging = true; const pos = cPos(); dragStart = { x: p.x - pos.x, y: p.y - pos.y }; }
     }
     function pMove(e) {
       if (canvasDisabled) return; e.preventDefault(); const p = gcp(e);
+      dragMoved = true;
       if (mode === "draw" && !locked && curPath) { curPath.push({ x: wrap(p.x, 0, W), y: wrap(p.y, 0, H) }); render(); }
       else if (dragging && dragStart) { setCPos({ x: wrap(p.x - dragStart.x, -W * 0.5, W * 1.5), y: wrap(p.y - dragStart.y, -H * 0.5, H * 1.5) }); update(); }
     }
     function pUp() {
       if (canvasDisabled) return;
+      if (mode === "type" && !dragMoved) focusCanvasInput();
       if (mode === "draw" && !locked && curPath && curPath.length > 1) { dPaths.push(curPath); }
       curPath = null; dragging = false; dragStart = null; update();
     }
 
     /* touch handlers with 2-finger pinch/rotate */
+    let touchMoved = false;
     function tDown(e) {
       if (canvasDisabled) return; e.preventDefault();
+      touchMoved = false;
       const ts = getTouches(e);
       if (ts.length === 2) {
         /* start pinch/rotate */
@@ -1341,6 +1530,7 @@
     }
     function tMove(e) {
       if (canvasDisabled) return; e.preventDefault();
+      touchMoved = true;
       const ts = getTouches(e);
       if (ts.length === 2 && pinchStartDist !== null) {
         /* pinch = scale */
@@ -1368,6 +1558,7 @@
       if (canvasDisabled) return;
       if (e.touches.length < 2) { pinchStartDist = null; pinchStartAngle = null; }
       if (e.touches.length === 0) {
+        if (mode === "type" && !touchMoved) focusCanvasInput();
         if (mode === "draw" && !locked && curPath && curPath.length > 1) { dPaths.push(curPath); }
         curPath = null; dragging = false; dragStart = null;
         pinchStartDist = null; pinchStartAngle = null;
@@ -1399,16 +1590,22 @@
 
     /* ── init ── */
     (function init() {
+      /* Check URL param for view preference */
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("view")) viewMode = params.get("view");
+      
       ["tcSel", "tcSelM"].forEach(id => {
         const sel = document.getElementById(id);
         P_DISP.forEach((n, i) => { const o = document.createElement("option"); o.value = i; o.textContent = n; sel.appendChild(o); });
       });
       const isMobile = window.innerWidth <= 680;
       if (isMobile) { density = 5; document.getElementById("densSliderM").value = 5; }
+      applyViewMode();
       resize();
       typePos = { x: W / 2, y: H / 2 };
       drawPos = { x: W / 2, y: H / 2 };
       buildRow2(); buildSheetMode();
+      startGhostAnim();
     })();
   </script>
 </body>
