@@ -1,24 +1,44 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
-<title>Composition Lab</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-<style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body { height: 100%; overflow: hidden; }
-  body {
-    background: #0a0a0a; color: #e8e4dd;
-    font-family: 'JetBrains Mono', monospace;
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    position: fixed; inset: 0;
-    -webkit-user-select: none; user-select: none;
-  }
 
-  /* subtle lattice bg */
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+  <title>Composition Lab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html,
+    body {
+      height: 100%;
+      overflow: hidden;
+    }
+
+    body {
+      background: #0a0a0a;
+      color: #e8e4dd;
+      font-family: 'JetBrains Mono', monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: fixed;
+      inset: 0;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    /* subtle lattice bg * removed for minimalism * /
+  /* 
   body::before {
     content: ''; position: absolute; inset: 0; opacity: 0.04;
     background-image:
@@ -28,107 +48,242 @@
     background-size: 40px 69px;
     pointer-events: none;
   }
+  */
 
-  .container {
-    display: flex; flex-direction: column; align-items: center;
-    gap: 48px; position: relative; z-index: 1; width: 100%;
-    max-width: 400px; padding: 0 24px;
-  }
+    .container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 40px;
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 440px;
+      padding: 0 24px;
+    }
 
-  .title {
-    font-weight: 700; font-size: clamp(20px, 5vw, 32px);
-    letter-spacing: 3px; text-align: center;
-    background: linear-gradient(135deg, #e8e4dd 30%, #d4912a 100%);
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-  }
+    .title {
+      font-weight: 700;
+      font-size: clamp(20px, 5vw, 32px);
+      letter-spacing: 3px;
+      text-align: center;
+      color: #e8e4dd;
+      /* removed gradient for solid professional look */
+      text-shadow: 0 2px 10px rgba(232, 228, 221, 0.1);
+    }
 
-  .menu { display: flex; flex-direction: column; gap: 2px; width: 100%; }
+    .title-desc {
+      font-size: 13px;
+      font-weight: 400;
+      color: #888;
+      text-align: center;
+      margin-top: -30px;
+      letter-spacing: 0.5px;
+    }
 
-  .menu-item {
-    display: flex; align-items: center; gap: 16px;
-    padding: 18px 20px; background: #111;
-    border: 1px solid #1a1a1a;
-    cursor: pointer; transition: all 0.25s;
-    text-decoration: none; color: #e8e4dd;
-  }
-  .menu-item:first-child { border-radius: 12px 12px 0 0; }
-  .menu-item:last-child { border-radius: 0 0 12px 12px; }
-  .menu-item:hover { background: #161616; border-color: #d4912a; }
-  .menu-item:active { transform: scale(0.99); }
+    .menu {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      width: 100%;
+    }
 
-  .menu-item.disabled {
-    opacity: 0.3; cursor: not-allowed;
-    pointer-events: none;
-  }
+    .menu-item {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 16px 20px;
+      background: #141414;
+      /* slightly warmer dark */
+      border: 1px solid #222;
+      border-radius: 8px;
+      /* consistent soft corners */
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      color: #e8e4dd;
+      position: relative;
+      overflow: hidden;
+    }
 
-  .menu-icon {
-    width: 36px; height: 36px; flex-shrink: 0;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 16px; color: #888;
-    background: #1a1a1a; border-radius: 8px;
-    border: 1px solid #222;
-    transition: all 0.25s;
-  }
-  .menu-item:hover .menu-icon { border-color: #d4912a; color: #d4912a; }
+    /* Remove adjacent border radius rules since we have gaps now */
+    /* .menu-item:first-child { border-radius: 12px 12px 0 0; } */
+    /* .menu-item:last-child { border-radius: 0 0 12px 12px; } */
 
-  .menu-icon svg { width: 18px; height: 18px; fill: currentColor; }
+    .menu-item:hover {
+      background: #1a1a1a;
+      border-color: rgba(212, 145, 42, 0.4);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
 
-  .menu-label {
-    font-size: 13px; font-weight: 600; letter-spacing: 1px;
-  }
+    .menu-item:active {
+      transform: scale(0.99) translateY(0);
+    }
 
-  .menu-badge {
-    margin-left: auto; font-size: 9px; font-weight: 500;
-    letter-spacing: 0.5px; color: #555;
-    padding: 3px 8px; border-radius: 4px;
-    border: 1px solid #222; background: #0e0e0e;
-  }
+    .menu-item.disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
 
-  .menu-arrow {
-    margin-left: auto; color: #333; font-size: 16px;
-    transition: color 0.25s;
-  }
-  .menu-item:hover .menu-arrow { color: #d4912a; }
+    .menu-icon {
+      width: 36px;
+      height: 36px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      color: #777;
+      background: #0a0a0a;
+      border-radius: 6px;
+      border: 1px solid #1a1a1a;
+      transition: all 0.2s ease;
+    }
 
-  .footer {
-    font-size: 11px; font-weight: 400;
-    letter-spacing: 1.5px; color: #444;
-  }
+    .menu-item:hover .menu-icon {
+      border-color: rgba(212, 145, 42, 0.3);
+      color: #d4912a;
+      box-shadow: 0 0 8px rgba(212, 145, 42, 0.1);
+    }
 
-  /* view toggle */
-  .view-toggle {
-    position: fixed; top: 12px; right: 12px; z-index: 100;
-    width: 32px; height: 32px; border-radius: 8px;
-    border: 1px solid #222; background: #111;
-    color: #555; cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    transition: all 0.2s;
-  }
-  .view-toggle:hover { border-color: #d4912a; color: #d4912a; }
-  .view-toggle svg { width: 16px; height: 16px; fill: currentColor; }
-</style>
+    .menu-icon svg {
+      width: 18px;
+      height: 18px;
+      fill: currentColor;
+    }
+
+    .menu-text-block {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex-grow: 1;
+    }
+
+    .menu-label {
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 1px;
+    }
+
+    .menu-desc {
+      font-size: 11px;
+      font-weight: 400;
+      color: #777;
+      letter-spacing: 0.3px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .menu-badge {
+      margin-left: auto;
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      color: rgba(212, 145, 42, 0.8);
+      padding: 4px 8px;
+      border-radius: 4px;
+      border: 1px solid rgba(212, 145, 42, 0.2);
+      background: rgba(212, 145, 42, 0.05);
+    }
+
+    .menu-arrow {
+      margin-left: auto;
+      color: #444;
+      font-size: 18px;
+      transition: all 0.2s ease;
+      transform: translateX(0);
+    }
+
+    .menu-item:hover .menu-arrow {
+      color: #d4912a;
+      transform: translateX(2px);
+    }
+
+    .footer {
+      font-size: 12px;
+      font-weight: 400;
+      letter-spacing: 2px;
+      color: #555;
+      margin-top: 10px;
+    }
+
+    /* view toggle */
+    .view-toggle {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 100;
+      /* Moved to bottom for cleaner header */
+      width: 36px;
+      height: 36px;
+      border-radius: 6px;
+      border: 1px solid #222;
+      background: #111;
+      color: #666;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+
+    .view-toggle:hover {
+      border-color: #d4912a;
+      color: #d4912a;
+      background: #141414;
+      transform: translateY(-2px);
+    }
+
+    .view-toggle:active {
+      transform: translateY(0);
+    }
+
+    .view-toggle svg {
+      width: 18px;
+      height: 18px;
+      fill: currentColor;
+    }
+  </style>
 </head>
+
 <body>
 
   <div class="container">
     <div class="title">COMPOSITION LAB</div>
+    <div class="title-desc">Sonic architecture & harmonic geometry</div>
 
     <nav class="menu">
       <a class="menu-item" href="tonnetz.html" id="linkTonnetz">
         <div class="menu-icon">
-          <svg viewBox="0 0 24 24"><path d="M12 2L2 19h20L12 2zm0 4l7 12H5l7-12z"/></svg>
+          <svg viewBox="0 0 24 24">
+            <path d="M12 2L2 19h20L12 2zm0 4l7 12H5l7-12z" />
+          </svg>
         </div>
-        <span class="menu-label">TONNETZ TONE ROW</span>
+        <div class="menu-text-block">
+          <span class="menu-label">TONNETZ ROW</span>
+          <span class="menu-desc">Generate melodies via harmonic geometry</span>
+        </div>
         <span class="menu-arrow">›</span>
       </a>
+
       <a class="menu-item" href="morse.html" id="linkMorse">
         <div class="menu-icon">·—</div>
-        <span class="menu-label">MORSE SEQ</span>
+        <div class="menu-text-block">
+          <span class="menu-label">MORSE SEQ</span>
+          <span class="menu-desc">Turn text phrases into rhythmic patterns</span>
+        </div>
         <span class="menu-arrow">›</span>
       </a>
+
       <div class="menu-item disabled">
         <div class="menu-icon">⠃</div>
-        <span class="menu-label">BRAILLE SEQ</span>
+        <div class="menu-text-block">
+          <span class="menu-label">BRAILLE SEQ</span>
+          <span class="menu-desc">Tactile step-sequencing interface</span>
+        </div>
         <span class="menu-badge">COMING SOON</span>
       </div>
     </nav>
@@ -137,8 +292,12 @@
   </div>
 
   <button class="view-toggle" id="viewToggle" title="Toggle mobile/desktop view">
-    <svg id="icoPhone" viewBox="0 0 24 24"><path d="M7 1h10a2 2 0 012 2v18a2 2 0 01-2 2H7a2 2 0 01-2-2V3a2 2 0 012-2zm0 2v14h10V3H7zm3 16h4v1h-4v-1z"/></svg>
-    <svg id="icoDesktop" viewBox="0 0 24 24" style="display:none"><path d="M3 4h18a1 1 0 011 1v11a1 1 0 01-1 1H3a1 1 0 01-1-1V5a1 1 0 011-1zm1 2v9h16V6H4zm4 13h8v1H8v-1z"/></svg>
+    <svg id="icoPhone" viewBox="0 0 24 24">
+      <path d="M7 1h10a2 2 0 012 2v18a2 2 0 01-2 2H7a2 2 0 01-2-2V3a2 2 0 012-2zm0 2v14h10V3H7zm3 16h4v1h-4v-1z" />
+    </svg>
+    <svg id="icoDesktop" viewBox="0 0 24 24" style="display:none">
+      <path d="M3 4h18a1 1 0 011 1v11a1 1 0 01-1 1H3a1 1 0 01-1-1V5a1 1 0 011-1zm1 2v9h16V6H4zm4 13h8v1H8v-1z" />
+    </svg>
   </button>
 
   <script>
@@ -146,29 +305,30 @@
     const params = new URLSearchParams(window.location.search);
     let viewPref = params.get('view') || 'auto';
     const isMobile = window.innerWidth <= 768;
-    
+
     function updateToggleIcon() {
       const showingMobile = viewPref === 'mobile' || (viewPref === 'auto' && isMobile);
       document.getElementById('icoPhone').style.display = showingMobile ? 'block' : 'none';
       document.getElementById('icoDesktop').style.display = showingMobile ? 'none' : 'block';
     }
-    
+
     function updateLinks() {
       const suffix = viewPref === 'auto' ? '' : '?view=' + viewPref;
       document.getElementById('linkTonnetz').href = 'tonnetz.html' + suffix;
       document.getElementById('linkMorse').href = 'morse.html' + suffix;
     }
-    
+
     document.getElementById('viewToggle').onclick = () => {
       const currentlyMobile = viewPref === 'mobile' || (viewPref === 'auto' && isMobile);
       viewPref = currentlyMobile ? 'desktop' : 'mobile';
       updateToggleIcon();
       updateLinks();
     };
-    
+
     updateToggleIcon();
     updateLinks();
   </script>
 
 </body>
+
 </html>
