@@ -1109,7 +1109,7 @@
       sbBtn("#", "Pitch class", pc ? "on" : "", () => { togglePc(); buildSidebar(); });
       sbBtn('<svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>', "Reset", "", resetView);
       sbBtn('<svg class="svg-icon" viewBox="0 0 24 24"><path d="M15 3l2.3 2.3-2.89 2.87 1.42 1.42L18.7 6.7 21 9V3zM3 9l2.3-2.3 2.87 2.89 1.42-1.42L6.7 5.3 9 3H3zm6 12l-2.3-2.3 2.89-2.87-1.42-1.42L5.3 17.3 3 15v6zm12-6l-2.3 2.3-2.87-2.89-1.42 1.42 2.89 2.87L15 21h6z"/></svg>', "Nudge", "", nudge);
-      sbBtn('<svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 4c-4.41 0-8 3.59-8 8s3.59 8 8 8 8-3.59 8-8-3.59-8-8-8zm0 14c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6z"/></svg>', "Wave", "", cycleWave);
+      sbBtn(WAVES[waveIdx][1], WAVES[waveIdx][0], "", cycleWave);
       sbBtn('<svg class="svg-icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>', "Play", "", doPlay);
 
       /* ── Dynamic controls: size + tilt side by side ── */
@@ -1220,7 +1220,7 @@
           let nx, ny;
           if (hasType) { nx = (rx / curSize + 0.5) * szW; ny = (ry / curSize + 0.5) * szH; }
           else { nx = (rx / W + 0.5) * szW; ny = (ry / H + 0.5) * szH; }
-          for (let ddx = -2; ddx <= 2; ddx++)for (let ddy = -2; ddy <= 2; ddy++) {
+          for (let ddx = -3; ddx <= 3; ddx++)for (let ddy = -3; ddy <= 3; ddy++) {
             const px = Math.round(nx + ddx), py = Math.round(ny + ddy);
             if (px >= 0 && px < szW && py >= 0 && py < szH && imgData.data[(py * szW + px) * 4] < 128) act.add(nd.id);
           }
@@ -1419,6 +1419,7 @@
         const e = document.getElementById(id);
         if (e) { e.setAttribute("data-tip", WAVES[waveIdx][0]); e.textContent = sym; }
       });
+      buildSidebar();
     }
     function resetView() {
       if (mode === "type") { typePos = { x: W / 2, y: H / 2 }; typeSc = 0.45; typeRot = 0; }
