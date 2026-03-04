@@ -1,0 +1,1416 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>TONNETZ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      touch-action: manipulation
+    }
+
+    html {
+      overflow: hidden;
+      height: 100%;
+      position: fixed;
+      width: 100%
+    }
+
+    body {
+      background: #0a0a0a;
+      color: #c8c0b4;
+      font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      height: 100%;
+      height: 100dvh;
+      user-select: none;
+      -webkit-user-select: none;
+      overflow-x: hidden;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch
+    }
+
+    h1 {
+      font-size: clamp(14px, 3vw, 20px);
+      font-weight: 500;
+      letter-spacing: 0.35em;
+      color: #706860;
+      padding: 12px 16px 8px;
+      text-align: center;
+      flex-shrink: 0;
+      background: linear-gradient(90deg, #9a8a78, #d4912a);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      opacity: 0.9
+    }
+
+    .drow {
+      display: flex;
+      gap: 4px;
+      padding: 4px 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      max-width: 1060px;
+      width: 100%;
+      flex-shrink: 0
+    }
+
+    .drow2 {
+      display: flex;
+      gap: 8px;
+      padding: 3px 10px 4px;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      max-width: 1060px;
+      width: 100%;
+      min-height: 34px;
+      flex-shrink: 0
+    }
+
+    .panel {
+      display: flex;
+      gap: 4px;
+      background: #141414;
+      padding: 4px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.03);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      align-items: center
+    }
+
+    button {
+      border: none;
+      border-radius: 5px;
+      font-family: inherit;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      padding: 6px 12px;
+      font-size: 14px;
+      background: #1e1e1e;
+      color: #8a8278;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+      position: relative
+    }
+
+    button:hover {
+      background: #252525;
+      color: #c8c0b4;
+      transform: translateY(-1px)
+    }
+
+    button:active {
+      transform: translateY(1px) scale(0.96)
+    }
+
+    button.on {
+      background: rgba(212, 145, 42, 0.15);
+      color: #d4912a;
+      box-shadow: inset 0 0 0 1px rgba(212, 145, 42, 0.4)
+    }
+
+    button.on:hover {
+      background: rgba(212, 145, 42, 0.25)
+    }
+
+    .grp {
+      display: flex;
+      gap: 2px;
+      background: #1e1e1e;
+      border-radius: 5px;
+      padding: 2px
+    }
+
+    select {
+      border: none;
+      border-radius: 5px;
+      font-family: inherit;
+      font-weight: 500;
+      cursor: pointer;
+      padding: 6px 24px 6px 12px;
+      font-size: 13px;
+      background: #1e1e1e url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2214%22%20height%3D%2210%22%20viewBox%3D%220%200%2014%2010%22%3E%3Cpolygon%20fill%3D%22%23706860%22%20points%3D%227%2C10%200%2C0%2014%2C0%22%2F%3E%3C%2Fsvg%3E") no-repeat right 8px center;
+      background-size: 8px;
+      color: #c8c0b4;
+      outline: none;
+      -webkit-appearance: none;
+      appearance: none;
+      touch-action: manipulation;
+      transition: all 0.15s ease
+    }
+
+    select:hover {
+      background-color: #252525
+    }
+
+    input[type=range] {
+      accent-color: #d4912a;
+      cursor: pointer;
+      touch-action: manipulation;
+      -webkit-appearance: none;
+      background: transparent
+    }
+
+    input[type=range]::-webkit-slider-runnable-track {
+      width: 100%;
+      height: 4px;
+      background: #2a2a2a;
+      border-radius: 2px;
+      border: none
+    }
+
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      height: 12px;
+      width: 12px;
+      border-radius: 50%;
+      background: #d4912a;
+      margin-top: -4px;
+      box-shadow: 0 0 8px rgba(212, 145, 42, 0.4)
+    }
+
+    input[type=text] {
+      width: 130px;
+      height: 32px;
+      text-align: center;
+      font-size: 17px;
+      font-family: "Noto Sans SC", "Noto Sans JP", "Noto Sans KR", sans-serif;
+      border: 1px solid #333;
+      border-radius: 6px;
+      background: #141414;
+      color: #c8c0b4;
+      outline: none;
+      caret-color: #d4912a;
+      touch-action: manipulation;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+      transition: border-color 0.2s
+    }
+
+    input[type=text]:focus {
+      border-color: #d4912a
+    }
+
+    /* tooltips */
+    [data-tip]:hover::after {
+      content: attr(data-tip);
+      position: absolute;
+      bottom: -28px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #161616;
+      color: #a0988c;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      white-space: nowrap;
+      pointer-events: none;
+      opacity: 1;
+      animation: fadein 0.2s;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      z-index: 50
+    }
+
+    @keyframes fadein {
+      from {
+        opacity: 0;
+        transform: translate(-50%, -4px)
+      }
+
+      to {
+        opacity: 1;
+        transform: translate(-50%, 0)
+      }
+    }
+
+    /* slider with label */
+    .sld-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1px
+    }
+
+    .sld-wrap input[type=range] {
+      width: 54px
+    }
+
+    .sld-lbl {
+      font-size: 9px;
+      color: #706860;
+      letter-spacing: 0.08em;
+      text-transform: lowercase
+    }
+
+    /* knob component */
+    .knob-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      margin: 0 8px;
+    }
+
+    .knob {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #2a2a2a, #141414);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5), inset 0 1px 2px rgba(255, 255, 255, 0.05);
+      position: relative;
+      cursor: ns-resize;
+      touch-action: none;
+    }
+
+    .knob-indicator {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 2px;
+      height: 12px;
+      background: #d4912a;
+      transform-origin: 50% 0;
+      border-radius: 1px;
+      box-shadow: 0 0 4px rgba(212, 145, 42, 0.5);
+    }
+
+    .knob-lbl {
+      font-size: 9px;
+      color: #706860;
+      letter-spacing: 0.08em;
+      text-transform: lowercase
+    }
+
+    /* animations */
+    @keyframes slideUpFade {
+      from {
+        opacity: 0;
+        transform: translateY(4px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .panel-anim {
+      animation: slideUpFade 0.2s ease-out forwards;
+    }
+
+    .svg-icon {
+      width: 16px;
+      height: 16px;
+      fill: currentColor;
+      display: block;
+    }
+
+    /* canvas area with spatial sliders */
+    .canvas-area {
+      width: 100%;
+      max-width: 1060px;
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 12px 16px;
+      position: relative;
+      background: #0d0d0d;
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.02);
+      margin-top: 8px
+    }
+
+    .canvas-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      max-width: 1060px;
+      justify-content: center
+    }
+
+    canvas {
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      display: block;
+      touch-action: none;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3)
+    }
+
+    /* right density slider - custom vertical */
+    .dens-slider-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 0 2px;
+      height: 100%;
+      width: 32px;
+      flex-shrink: 0;
+      cursor: ns-resize;
+      touch-action: none
+    }
+
+    .dens-track {
+      width: 4px;
+      height: 100%;
+      max-height: 400px;
+      background: #2a2a2a;
+      border-radius: 2px;
+      position: relative
+    }
+
+    .dens-thumb {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #d4912a;
+      box-shadow: 0 0 8px rgba(212, 145, 42, 0.4);
+      position: absolute;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none
+    }
+
+    /* bottom skew slider */
+    .skew-slider-wrap {
+      width: 100%;
+      max-width: 1000px;
+      display: flex;
+      justify-content: center;
+      padding: 2px 30px 0
+    }
+
+    .skew-slider-wrap input[type=range] {
+      width: 100%;
+      max-width: 600px;
+      height: 16px;
+      accent-color: #d4912a;
+      cursor: pointer;
+      touch-action: manipulation
+    }
+
+    .tonerow {
+      width: 100%;
+      max-width: 1060px;
+      padding: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      flex-wrap: nowrap;
+      min-height: 48px;
+      flex-shrink: 0;
+      overflow-x: auto
+    }
+
+    .trpill {
+      padding: 4px 12px;
+      background: rgba(212, 145, 42, 0.15);
+      color: #d4912a;
+      border-radius: 12px;
+      font-size: 15px;
+      font-family: "SF Mono", "Fira Code", "Courier New", monospace;
+      font-weight: bold;
+      letter-spacing: 0.05em;
+      min-width: 32px;
+      text-align: center;
+      flex-shrink: 0;
+      box-shadow: 0 0 12px rgba(212, 145, 42, 0.2), inset 0 0 0 1px rgba(212, 145, 42, 0.3)
+    }
+
+    .trbtn {
+      padding: 6px 12px;
+      font-size: 15px;
+      flex-shrink: 0
+    }
+
+    /* mobile */
+    .fab {
+      display: none;
+      position: fixed;
+      top: 12px;
+      right: 12px;
+      z-index: 200;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      font-size: 22px;
+      background: #d4912a;
+      color: #0a0a0a;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 16px rgba(0, 0, 0, 0.6);
+      touch-action: manipulation
+    }
+
+    .fab-clear {
+      display: none;
+      position: fixed;
+      top: 12px;
+      right: 70px;
+      z-index: 200;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      font-size: 22px;
+      background: #1e1e1e;
+      color: #c8c0b4;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 16px rgba(0, 0, 0, 0.6);
+      touch-action: manipulation;
+    }
+
+    .overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 150
+    }
+
+    .sheet {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 160;
+      background: #161616;
+      border-top-left-radius: 16px;
+      border-top-right-radius: 16px;
+      padding: 16px 16px 32px;
+      max-height: 75vh;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      transform: translateY(100%);
+      transition: transform 0.3s ease;
+      touch-action: auto
+    }
+
+    .sheet.open {
+      transform: translateY(0)
+    }
+
+    .sheet-handle {
+      width: 40px;
+      height: 4px;
+      background: #555;
+      border-radius: 2px;
+      margin: 0 auto 14px
+    }
+
+    .sheet .s-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 12px
+    }
+
+    .sheet button {
+      padding: 12px 18px;
+      font-size: 17px;
+      min-height: 48px;
+      min-width: 48px
+    }
+
+    .sheet select {
+      padding: 12px 14px;
+      font-size: 17px;
+      min-height: 48px
+    }
+
+    .sheet input[type=range] {
+      width: 80%;
+      max-width: 240px;
+      height: 36px
+    }
+
+    .sheet input[type=text] {
+      width: 180px;
+      height: 48px;
+      font-size: 22px
+    }
+
+    .sheet .s-label {
+      color: #706860;
+      font-size: 13px;
+      width: 100%;
+      text-align: center
+    }
+
+    @media(max-width:680px) {
+
+      .drow,
+      .drow2 {
+        display: none !important
+      }
+
+      .fab {
+        display: flex
+      }
+
+      .fab-clear {
+        display: none;
+      }
+
+      .fab-clear.show {
+        display: flex;
+      }
+
+      h1 {
+        padding: 4px 16px 2px;
+        font-size: 13px
+      }
+
+      .tonerow {
+        padding: 3px 6px;
+        min-height: 34px
+      }
+
+      .trpill {
+        font-size: 13px;
+        padding: 3px 7px
+      }
+
+      .dens-track {
+        max-height: 250px
+      }
+
+      .skew-slider-wrap {
+        padding: 12px 16px
+      }
+
+      input[type=range]::-webkit-slider-thumb {
+        width: 24px;
+        height: 24px;
+        margin-top: -10px;
+      }
+    }
+  <style>
+    .home-btn {
+      position: fixed; top: 10px; left: 10px; z-index: 200;
+      width: 32px; height: 32px; border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.08); background: #141414;
+      color: #888; font-size: 18px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s; text-decoration: none;
+    }
+    .home-btn:hover { border-color: #d4912a; color: #d4912a; }
+  </style>
+</head>
+
+<body>
+
+  <a class="home-btn" href="index.html" title="Home">‹</a>
+
+  <h1>TONNETZ</h1>
+
+  <!-- Desktop row 1 -->
+  <div class="drow" id="drow1">
+    <div class="panel">
+      <div class="grp">
+        <button id="mType" class="on" onclick="setMode('type')" data-tip="Type Mode">
+          <svg class="svg-icon" viewBox="0 0 24 24" style="width:18px;height:18px">
+            <path d="M2.5 4v3h5v12h3V7h5V4h-13zm19 5h-9v3h3v7h3v-7h3V9z" />
+          </svg>
+        </button>
+        <button id="mDraw" onclick="setMode('draw')" data-tip="Draw Mode">
+          <svg class="svg-icon" viewBox="0 0 24 24" style="width:16px;height:16px">
+            <path
+              d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
+          </svg>
+        </button>
+      </div>
+      <select id="tcSel" onchange="setTc(parseInt(this.value))"></select>
+      <button id="pcBtn" onclick="togglePc()">#</button>
+    </div>
+
+    <div class="panel">
+      <button onclick="resetView()" data-tip="Reset View">
+        <svg class="svg-icon" viewBox="0 0 24 24">
+          <path
+            d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z" />
+        </svg>
+      </button>
+      <button onclick="nudge()" data-tip="Optimize Layout">
+        <svg class="svg-icon" viewBox="0 0 24 24">
+          <path
+            d="M15 3l2.3 2.3-2.89 2.87 1.42 1.42L18.7 6.7 21 9V3zM3 9l2.3-2.3 2.87 2.89 1.42-1.42L6.7 5.3 9 3H3zm6 12l-2.3-2.3 2.89-2.87-1.42-1.42L5.3 17.3 3 15v6zm12-6l-2.3 2.3-2.87-2.89-1.42 1.42 2.89 2.87L15 21h6z" />
+        </svg>
+      </button>
+    </div>
+
+    <div class="panel">
+      <div class="grp">
+        <button id="waveBtn" onclick="cycleWave()" data-tip="Cycle Waveform">
+          <svg class="svg-icon" viewBox="0 0 24 24">
+            <path
+              d="M12 4c-4.41 0-8 3.59-8 8s3.59 8 8 8 8-3.59 8-8-3.59-8-8-8zm0 14c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6z" />
+          </svg>
+        </button>
+        <button id="playBtn" onclick="doPlay()" data-tip="Play sequence">
+          <svg class="svg-icon" viewBox="0 0 24 24">
+            <path d="M8 5v14l11-7z" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Desktop row 2 -->
+  <div class="drow2" id="drow2"></div>
+
+  <!-- Canvas area with spatial sliders -->
+  <div class="canvas-area">
+    <div class="canvas-row">
+      <canvas id="cv"></canvas>
+      <div class="dens-slider-wrap" id="densWrap">
+        <div class="dens-track" id="densTrack">
+          <div class="dens-thumb" id="densThumb"></div>
+        </div>
+      </div>
+    </div>
+    <div class="skew-slider-wrap">
+      <input type="range" id="skewSlider" min="-1.5" max="1.5" step="0.05" value="0"
+        oninput="setSkew(parseFloat(this.value))">
+    </div>
+  </div>
+
+  <div class="tonerow" id="tonerow"></div>
+
+  <!-- Mobile -->
+  <button class="fab" id="fab" onclick="toggleSheet()">&#x2699;</button>
+  <button class="fab-clear" id="fabClear" onclick="clearDraw()">
+    <svg class="svg-icon" viewBox="0 0 24 24">
+      <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+    </svg>
+  </button>
+  <div class="overlay" id="overlay" onclick="toggleSheet()"></div>
+  <div class="sheet" id="sheet">
+    <div class="sheet-handle"></div>
+    <div class="s-row">
+      <div class="grp">
+        <button id="mTypeM" class="on" onclick="setMode('type')">
+          <svg class="svg-icon" viewBox="0 0 24 24" style="width:18px;height:18px">
+            <path d="M2.5 4v3h5v12h3V7h5V4h-13zm19 5h-9v3h3v7h3v-7h3V9z" />
+          </svg>
+        </button>
+        <button id="mDrawM" onclick="setMode('draw')">
+          <svg class="svg-icon" viewBox="0 0 24 24" style="width:16px;height:16px">
+            <path
+              d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
+          </svg>
+        </button>
+      </div>
+    </div>
+    <div class="s-row" id="sheetMode"></div>
+    <div class="s-row" id="sheetTcRow">
+      <select id="tcSelM" onchange="setTc(parseInt(this.value))"></select>
+    </div>
+    <div class="s-row">
+      <button id="pcBtnM" onclick="togglePc()">#</button>
+      <button onclick="resetView()">
+        <svg class="svg-icon" viewBox="0 0 24 24">
+          <path
+            d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z" />
+        </svg>
+      </button>
+      <button onclick="nudge()">
+        <svg class="svg-icon" viewBox="0 0 24 24">
+          <path
+            d="M15 3l2.3 2.3-2.89 2.87 1.42 1.42L18.7 6.7 21 9V3zM3 9l2.3-2.3 2.87 2.89 1.42-1.42L6.7 5.3 9 3H3zm6 12l-2.3-2.3 2.89-2.87-1.42-1.42L5.3 17.3 3 15v6zm12-6l-2.3 2.3-2.87-2.89-1.42 1.42 2.89 2.87L15 21h6z" />
+        </svg>
+      </button>
+    </div>
+    <div class="s-row">
+      <span class="s-label">Density</span>
+      <input type="range" id="densSliderM" min="4" max="14" step="1" value="5"
+        oninput="setDensity(parseInt(this.value))">
+    </div>
+    <div class="s-row">
+      <span class="s-label">Skew</span>
+      <input type="range" id="skewSliderM" min="-1.5" max="1.5" step="0.05" value="0"
+        oninput="setSkew(parseFloat(this.value))">
+    </div>
+    <div class="s-row">
+      <div class="grp">
+        <button id="waveBtnM" onclick="cycleWave()">
+          <svg class="svg-icon" viewBox="0 0 24 24">
+            <path
+              d="M12 4c-4.41 0-8 3.59-8 8s3.59 8 8 8 8-3.59 8-8-3.59-8-8-8zm0 14c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6z" />
+          </svg>
+        </button>
+        <button id="playBtnM" onclick="doPlay()">
+          <svg class="svg-icon" viewBox="0 0 24 24">
+            <path d="M8 5v14l11-7z" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+  <script>
+    const P_DISP = ["C", "C\u266f", "D", "D\u266f", "E", "F", "F\u266f", "G", "G\u266f", "A", "A\u266f", "B"];
+    const P_SYN = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+    const WAVES = [["sine", "\u223f"], ["square", "\u25a1"], ["sawtooth", "\u25b3"]];
+    const PAPER = "#f0eadc", AMBER = "#d4912a", AMBER_GLOW = "rgba(212,145,42,0.15)", INK = "#2a1f14", INK3 = "#9a8a78";
+    const GRID_COL = "rgba(42,31,20,0.22)", NODE_IN = "rgba(42,31,20,0.7)";
+
+    const cv = document.getElementById("cv"), ctx = cv.getContext("2d");
+    const PAD = 30, BMP_BASE = 440;
+
+    /* SVGs */
+    const svgPlay = `<svg class="svg-icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>`;
+    const svgReset = `<svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>`;
+    const svgNudge = `<svg class="svg-icon" viewBox="0 0 24 24"><path d="M15 3l2.3 2.3-2.89 2.87 1.42 1.42L18.7 6.7 21 9V3zM3 9l2.3-2.3 2.87 2.89 1.42-1.42L6.7 5.3 9 3H3zm6 12l-2.3-2.3 2.89-2.87-1.42-1.42L5.3 17.3 3 15v6zm12-6l-2.3 2.3-2.87-2.89-1.42 1.42 2.89 2.87L15 21h6z"/></svg>`;
+    const svgType = `<svg class="svg-icon" viewBox="0 0 24 24" style="width:18px;height:18px"><path d="M2.5 4v3h5v12h3V7h5V4h-13zm19 5h-9v3h3v7h3v-7h3V9z"/></svg>`;
+    const svgDraw = `<svg class="svg-icon" viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>`;
+    const svgClear = `<svg class="svg-icon" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>`;
+    const svgWave1 = `<svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 4c-4.41 0-8 3.59-8 8s3.59 8 8 8 8-3.59 8-8-3.59-8-8-8zm0 14c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6z"/></svg>`;
+
+    /* aspect-ratio-aware bitmap dimensions */
+    function bmpW() { return W >= H ? BMP_BASE : Math.round(BMP_BASE * W / H); }
+    function bmpH() { return H >= W ? BMP_BASE : Math.round(BMP_BASE * H / W); }
+
+    let W = 800, H = 600, mode = "type", tc = 0, pc = false, skew = 0, waveIdx = 0;
+    let density = 9;
+    let typeCh = "", typePos = { x: 400, y: 300 }, typeSc = 0.45, typeRot = 0;
+    let dPaths = [], curPath = null, locked = false, drawPos = { x: 400, y: 300 }, drawSc = 1.0, drawRot = 0;
+    let aN = new Set(), playing = false, toneStarted = false, synth = null;
+    let dragging = false, dragStart = null;
+    let showRot = false, showSc = false, showSkew = false;
+    let rotTm, scTm, skTm;
+    let activePitch = null;
+    let isComposing = false;
+    let sheetOpen = false;
+    let toneRowOrder = null;
+    let canvasDisabled = false;
+    let touches = []; /* track active touches for pinch/rotate */
+    let pinchStartDist = null, pinchStartSc = null;
+    let pinchStartAngle = null, pinchStartRot = null;
+
+    function cPos() { return mode === "type" ? typePos : drawPos; }
+    function cSc() { return mode === "type" ? typeSc : drawSc; }
+    function cRot() { return mode === "type" ? typeRot : drawRot; }
+    function setCPos(p) { if (mode === "type") typePos = p; else drawPos = p; }
+    function wrap(v, mn, mx) { const r = mx - mn; let o = v; while (o < mn) o += r; while (o > mx) o -= r; return o; }
+
+    function getCols() { return density; }
+
+    function genNodes() {
+      const COLS = getCols();
+      const ns = [], uw = W - PAD * 2;
+      const cs = uw / Math.max(COLS - 1, 1);
+      const rs = cs * Math.sqrt(3) / 2; /* equilateral triangles */
+      const visRows = Math.ceil((H + PAD * 2) / rs) + 2;
+      const baseR = Math.floor(visRows / 2);
+      const extraR = 3;
+
+      /* expand horizontal bounds based on the max possible skew deflection */
+      const extraSkewC = Math.ceil(((visRows + extraR * 2) / 2) * Math.abs(skew) * 0.5);
+      const extraC = Math.ceil(PAD / cs) + 3 + extraSkewC;
+
+      for (let r = -extraR - baseR; r < visRows + extraR - baseR; r++)for (let c = -extraC; c < COLS + extraC; c++) {
+        const xo = ((r % 2) + 2) % 2 === 1 ? cs * 0.5 : 0;
+        const so = r * skew * cs * 0.5;
+        const x = PAD + c * cs + xo + so;
+        const y = H / 2 - r * rs;
+        if (x < -cs * 2 || x > W + cs * 2 || y < -rs * 2 || y > H + rs * 2) continue;
+        ns.push({ x, y, pitch: (((c % 12 + 12) % 12 * 7) + ((r % 3 + 3) % 3 * 4) + tc) % 12, col: c, row: r, id: r + "-" + c });
+      } return ns;
+    }
+    function genEdges(nodes) {
+      const es = [], mp = {}; nodes.forEach(n => { mp[n.row + "-" + n.col] = n; });
+      nodes.forEach(cu => {
+        const r = cu.row, c = cu.col;
+        const rt = mp[r + "-" + (c + 1)]; if (rt) es.push([cu, rt]);
+        const od = ((r % 2) + 2) % 2 === 1;
+        const ul = mp[(r + 1) + "-" + (od ? c : c - 1)], ur = mp[(r + 1) + "-" + (od ? c + 1 : c)];
+        if (ul) es.push([cu, ul]); if (ur) es.push([cu, ur]);
+      }); return es;
+    }
+
+    function charBitmap(ch, sz) {
+      const c = document.createElement("canvas"); c.width = sz; c.height = sz;
+      const x = c.getContext("2d"); x.fillStyle = "white"; x.fillRect(0, 0, sz, sz);
+      x.fillStyle = "black"; x.textAlign = "center"; x.textBaseline = "middle";
+      x.font = "bold " + Math.floor(sz * 0.82) + 'px "Noto Sans SC","Noto Sans JP","Noto Sans KR","Helvetica Neue",sans-serif';
+      x.fillText(ch, sz / 2, sz / 2); return x.getImageData(0, 0, sz, sz);
+    }
+    function drawBitmapFn(paths, w, h, bw, bh, sc) {
+      const c = document.createElement("canvas"); c.width = bw; c.height = bh;
+      const x = c.getContext("2d"); x.fillStyle = "white"; x.fillRect(0, 0, bw, bh);
+      x.strokeStyle = "black"; x.lineWidth = Math.max(3 * (Math.min(bw, bh) / Math.max(w, h)) / sc, 1.5); x.lineCap = "round"; x.lineJoin = "round";
+      x.save(); x.translate(bw / 2, bh / 2); x.scale(sc, sc); x.translate(-bw / 2, -bh / 2);
+      const sx = bw / w, sy = bh / h;
+      paths.forEach(p => {
+        if (p.length < 2) return; x.beginPath(); x.moveTo(p[0].x * sx, p[0].y * sy);
+        for (let i = 1; i < p.length; i++) { const pv = p[i - 1], cu = p[i]; x.quadraticCurveTo(pv.x * sx, pv.y * sy, (pv.x + cu.x) / 2 * sx, (pv.y + cu.y) / 2 * sy); } x.stroke();
+      });
+      x.restore(); return x.getImageData(0, 0, bw, bh);
+    }
+
+    function getSize() { return Math.max(W - PAD * 2, H - PAD * 2) * cSc(); }
+    function lbl(p) { return pc ? ((p - tc + 12) % 12).toString() : P_DISP[p]; }
+    function nodeRadius() { return Math.max(8, Math.min(15, Math.round(W / (density * 5)))); }
+
+    function detect() {
+      const hasType = typeCh && mode === "type";
+      const hasDraw = mode === "draw" && dPaths.length > 0;
+      if (!hasType && !hasDraw) { aN = new Set(); return; }
+      const act = new Set(), nodes = genNodes();
+      const offs = [[0, 0], [-W, 0], [W, 0], [0, -H], [0, H], [-W, -H], [W, -H], [-W, H], [W, H]];
+
+      let pos = cPos(), rot = cRot(), sc = cSc();
+      if (mode === "draw" && !locked) { pos = { x: W / 2, y: H / 2 }; rot = 0; sc = 1.0; }
+
+      const cosR = Math.cos(-rot), sinR = Math.sin(-rot);
+      let imgData, szW, szH;
+      if (hasType) {
+        szW = szH = BMP_BASE;
+        imgData = charBitmap(typeCh, BMP_BASE);
+      } else if (hasDraw) {
+        szW = bmpW(); szH = bmpH();
+        imgData = drawBitmapFn(dPaths, W, H, szW, szH, sc);
+      }
+      if (!imgData) { aN = new Set(); return; }
+      const curSize = getSize();
+      nodes.forEach(nd => {
+        for (const [ox, oy] of offs) {
+          let dx = nd.x - (pos.x + ox), dy = nd.y - (pos.y + oy);
+          const rx = dx * cosR - dy * sinR, ry = dx * sinR + dy * cosR;
+          let nx, ny;
+          if (hasType) { nx = (rx / curSize + 0.5) * szW; ny = (ry / curSize + 0.5) * szH; }
+          else { nx = (rx / W + 0.5) * szW; ny = (ry / H + 0.5) * szH; }
+          for (let ddx = -2; ddx <= 2; ddx++)for (let ddy = -2; ddy <= 2; ddy++) {
+            const px = Math.round(nx + ddx), py = Math.round(ny + ddy);
+            if (px >= 0 && px < szW && py >= 0 && py < szH && imgData.data[(py * szW + px) * 4] < 128) act.add(nd.id);
+          }
+        }
+      });
+      aN = act;
+    }
+
+    function render() {
+      const dp = window.devicePixelRatio || 1;
+      cv.width = W * dp; cv.height = H * dp; cv.style.width = W + "px"; cv.style.height = H + "px";
+      ctx.scale(dp, dp);
+
+      ctx.fillStyle = PAPER; ctx.fillRect(0, 0, W, H);
+      ctx.strokeStyle = "rgba(180,168,148,0.06)"; ctx.lineWidth = 0.5;
+      for (let i = 0; i < H; i += 3) { ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(W, i); ctx.stroke(); }
+
+      const nodes = genNodes(), edges = genEdges(nodes);
+      const nr = nodeRadius();
+      ctx.strokeStyle = GRID_COL; ctx.lineWidth = 2;
+      edges.forEach(([a, b]) => { ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke(); });
+
+      const tO = [[0, 0], [-W, 0], [W, 0], [0, -H], [0, H], [-W, -H], [W, -H], [-W, H], [W, H]];
+
+      if (typeCh && mode === "type") {
+        const sz = getSize();
+        tO.forEach(([ox, oy]) => {
+          ctx.save(); ctx.translate(typePos.x + ox, typePos.y + oy); ctx.rotate(typeRot);
+          ctx.globalAlpha = 0.1; ctx.fillStyle = INK; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+          ctx.font = "bold " + sz + 'px "Noto Sans SC","Noto Sans JP","Noto Sans KR","Helvetica Neue",sans-serif';
+          ctx.fillText(typeCh, 0, 0); ctx.restore();
+        });
+      }
+
+      if (dPaths.length > 0 || curPath) {
+        ctx.lineWidth = 3; ctx.lineCap = "round"; ctx.lineJoin = "round";
+        const isLk = locked && mode === "draw";
+        [...dPaths, curPath].filter(Boolean).forEach(path => {
+          if (path.length < 2) return;
+          if (isLk) {
+            tO.forEach(([ox, oy]) => {
+              ctx.save(); ctx.translate(drawPos.x + ox, drawPos.y + oy); ctx.rotate(drawRot); ctx.scale(drawSc, drawSc);
+              ctx.translate(-W / 2, -H / 2);
+              ctx.strokeStyle = INK; ctx.globalAlpha = ox === 0 && oy === 0 ? 0.35 : 0.1;
+              ctx.beginPath(); ctx.moveTo(path[0].x, path[0].y);
+              for (let i = 1; i < path.length; i++) { const pv = path[i - 1], cu = path[i]; ctx.quadraticCurveTo(pv.x, pv.y, (pv.x + cu.x) / 2, (pv.y + cu.y) / 2); }
+              ctx.stroke(); ctx.restore();
+            });
+          } else {
+            tO.forEach(([ox, oy]) => {
+              ctx.strokeStyle = INK; ctx.globalAlpha = ox === 0 && oy === 0 ? 0.4 : 0.1;
+              ctx.beginPath(); ctx.moveTo(path[0].x + ox, path[0].y + oy);
+              for (let i = 1; i < path.length; i++) { const pv = path[i - 1], cu = path[i]; ctx.quadraticCurveTo(pv.x + ox, pv.y + oy, (pv.x + cu.x) / 2 + ox, (pv.y + cu.y) / 2 + oy); }
+              ctx.stroke();
+            });
+          }
+        }); ctx.globalAlpha = 1;
+      }
+
+      nodes.forEach(nd => {
+        const isA = aN.has(nd.id), lb = lbl(nd.pitch);
+        const isActivePlay = (activePitch !== null && nd.pitch === activePitch && isA);
+
+        if (isActivePlay) {
+          ctx.beginPath(); ctx.arc(nd.x, nd.y, nr + 8, 0, Math.PI * 2); ctx.fillStyle = "rgba(255, 255, 255, 0.4)"; ctx.fill();
+          ctx.beginPath(); ctx.arc(nd.x, nd.y, nr, 0, Math.PI * 2); ctx.fillStyle = "#fff"; ctx.fill();
+          ctx.fillStyle = "#000"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+          ctx.font = 'bold ' + Math.floor(nr * 0.75) + 'px "SF Mono","Fira Code","Courier New",monospace'; ctx.fillText(lb, nd.x, nd.y);
+        } else if (isA) {
+          ctx.beginPath(); ctx.arc(nd.x, nd.y, nr + 5, 0, Math.PI * 2); ctx.fillStyle = AMBER_GLOW; ctx.fill();
+          ctx.beginPath(); ctx.arc(nd.x, nd.y, nr, 0, Math.PI * 2); ctx.fillStyle = AMBER; ctx.fill();
+          ctx.fillStyle = "#fff"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+          ctx.font = 'bold ' + Math.floor(nr * 0.75) + 'px "SF Mono","Fira Code","Courier New",monospace'; ctx.fillText(lb, nd.x, nd.y);
+        } else {
+          ctx.beginPath(); ctx.arc(nd.x, nd.y, nr - 1, 0, Math.PI * 2); ctx.fillStyle = NODE_IN; ctx.fill();
+          ctx.fillStyle = PAPER; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+          ctx.font = Math.floor(nr * 0.7) + 'px "SF Mono","Fira Code","Courier New",monospace'; ctx.fillText(lb, nd.x, nd.y);
+        }
+      });
+
+      /* empty state hint */
+      if (aN.size === 0 && !typeCh && dPaths.length === 0 && !curPath) {
+        ctx.save();
+        ctx.fillStyle = "rgba(180, 168, 148, 0.4)";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.font = '16px "Inter", sans-serif';
+        ctx.fillText("Type a character or switch to Draw mode to begin.", W / 2, H / 2 + 60);
+        ctx.restore();
+      }
+
+      /* floating indicators */
+      ctx.save(); ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.font = '15px "SF Mono","Fira Code","Courier New",monospace'; ctx.fillStyle = AMBER;
+      let iy = H / 2;
+      if (showRot) { ctx.globalAlpha = 0.8; ctx.fillText(Math.round(cRot() * 180 / Math.PI) + "\u00b0", W / 2, iy); iy += 22; }
+      if (showSc) { ctx.globalAlpha = 0.8; ctx.fillText(Math.round(cSc() * 100) + "%", W / 2, iy); iy += 22; }
+      if (showSkew) { ctx.globalAlpha = 0.8; ctx.fillText("skew " + Math.round(skew * 100) / 100, W / 2, iy); }
+      ctx.restore();
+
+      renderToneRow(nodes);
+      updatePlayBtns();
+      updateDensThumb();
+    }
+
+    function renderToneRow(nodes) {
+      const ap = [...new Set(nodes.filter(n => aN.has(n.id)).map(n => n.pitch))];
+      ap.sort((a, b) => a - b);
+      let ordered;
+      if (toneRowOrder && toneRowOrder.length === ap.length && toneRowOrder.every(p => ap.includes(p))) ordered = toneRowOrder;
+      else { ordered = ap; toneRowOrder = null; }
+      const el = document.getElementById("tonerow");
+      if (ordered.length === 0) { el.innerHTML = ""; return; }
+      let html = ordered.map(p => '<span class="trpill">' + lbl(p) + '</span>').join("");
+      html += '<button class="trbtn" onclick="shuffleRow()" title="Shuffle">🎲</button>';
+      el.innerHTML = html;
+    }
+    function shuffleRow() {
+      const nodes = genNodes();
+      const ap = [...new Set(nodes.filter(n => aN.has(n.id)).map(n => n.pitch))];
+      if (ap.length < 2) return;
+      const arr = [...ap];
+      for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));[arr[i], arr[j]] = [arr[j], arr[i]]; }
+      toneRowOrder = arr; renderToneRow(nodes);
+    }
+    function updatePlayBtns() {
+      const has = aN.size > 0;
+      ["playBtn", "playBtnM"].forEach(id => {
+        const b = document.getElementById(id); if (b) { b.className = has ? "on" : ""; b.style.opacity = playing ? "0.5" : "1"; }
+      });
+    }
+    function update() { detect(); render(); }
+
+    /* ── custom density slider ── */
+    function updateDensThumb() {
+      const track = document.getElementById("densTrack");
+      const thumb = document.getElementById("densThumb");
+      if (!track || !thumb) return;
+      const pct = (density - 4) / (14 - 4);
+      const th = track.getBoundingClientRect().height;
+      thumb.style.top = (1 - pct) * th + "px";
+    }
+    (function initDensSlider() {
+      const wrap = document.getElementById("densWrap");
+      const track = document.getElementById("densTrack");
+      if (!wrap || !track) return;
+      let active = false;
+      function onMove(clientY) {
+        const rect = track.getBoundingClientRect();
+        let pct = 1 - (clientY - rect.top) / rect.height;
+        pct = Math.max(0, Math.min(1, pct));
+        const v = Math.round(4 + pct * 10);
+        if (v !== density) setDensity(v);
+      }
+      wrap.addEventListener("mousedown", e => { active = true; onMove(e.clientY); e.preventDefault(); });
+      window.addEventListener("mousemove", e => { if (active) onMove(e.clientY); });
+      window.addEventListener("mouseup", () => { active = false; });
+      wrap.addEventListener("touchstart", e => { active = true; onMove(e.touches[0].clientY); e.preventDefault(); }, { passive: false });
+      window.addEventListener("touchmove", e => { if (active) { onMove(e.touches[0].clientY); e.preventDefault(); } }, { passive: false });
+      window.addEventListener("touchend", () => { active = false; });
+    })();
+
+    /* ── controls ── */
+    function setMode(m) {
+      mode = m;
+      ["mType", "mTypeM"].forEach(id => { const e = document.getElementById(id); if (e) e.className = m === "type" ? "on" : ""; });
+      ["mDraw", "mDrawM"].forEach(id => { const e = document.getElementById(id); if (e) e.className = m === "draw" ? "on" : ""; });
+      cv.style.cursor = mode === "draw" && !locked ? "crosshair" : "grab";
+      const fc = document.getElementById("fabClear");
+      if (fc) fc.className = m === "draw" ? "fab-clear show" : "fab-clear";
+      buildRow2(); buildSheetMode(); update();
+    }
+    function clearDraw() {
+      dPaths = []; curPath = null; locked = false; drawSc = 1.0; drawRot = 0; drawPos = { x: W / 2, y: H / 2 }; toneRowOrder = null;
+      buildRow2(); buildSheetMode(); update();
+    }
+    function setTc(v) { tc = v;["tcSel", "tcSelM"].forEach(id => { const e = document.getElementById(id); if (e) e.value = v; }); update(); }
+    function togglePc() {
+      pc = !pc;
+      ["pcBtn", "pcBtnM"].forEach(id => { const e = document.getElementById(id); if (e) e.className = pc ? "on" : ""; });
+      const tcEl = document.getElementById("tcSel"); if (tcEl) tcEl.style.display = pc ? "none" : "";
+      const tcRow = document.getElementById("sheetTcRow"); if (tcRow) tcRow.style.display = pc ? "none" : "";
+      toneRowOrder = null; update();
+    }
+    function setSkew(v) {
+      skew = v;["skewSlider", "skewSliderM"].forEach(id => { const e = document.getElementById(id); if (e) e.value = v; });
+      showSkew = true; clearTimeout(skTm); skTm = setTimeout(() => { showSkew = false; render(); }, 800); update();
+    }
+    function setDensity(v) {
+      density = v;
+      const dm = document.getElementById("densSliderM"); if (dm) dm.value = v;
+      update();
+    }
+    function cycleWave() {
+      waveIdx = (waveIdx + 1) % WAVES.length;
+      const sym = WAVES[waveIdx][1];
+      ["waveBtn", "waveBtnM"].forEach(id => {
+        const e = document.getElementById(id);
+        if (e) { e.setAttribute("data-tip", WAVES[waveIdx][0]); e.textContent = sym; }
+      });
+    }
+    function resetView() {
+      if (mode === "type") { typePos = { x: W / 2, y: H / 2 }; typeSc = 0.45; typeRot = 0; }
+      else { drawPos = { x: W / 2, y: H / 2 }; drawSc = 1.0; drawRot = 0; }
+      skew = 0;["skewSlider", "skewSliderM"].forEach(id => { const e = document.getElementById(id); if (e) e.value = 0; });
+      buildRow2(); buildSheetMode(); update();
+    }
+    function nudge() {
+      const nodes = genNodes(), curSize = getSize(), rot = cRot();
+      const isTyped = mode === "type" && !!typeCh, isDraw = mode === "draw" && dPaths.length > 0;
+      let imgData, szW, szH;
+      if (isTyped) { szW = szH = BMP_BASE; imgData = charBitmap(typeCh, BMP_BASE); }
+      else if (isDraw) { szW = bmpW(); szH = bmpH(); imgData = drawBitmapFn(dPaths, W, H, szW, szH, drawSc); }
+      if (!imgData) return;
+      let best = null, bestScore = -1;
+      const steps = 16, cx0 = W / 2, cy0 = H / 2, maxDist = Math.sqrt(cx0 * cx0 + cy0 * cy0);
+      const offs = [[0, 0], [-W, 0], [W, 0], [0, -H], [0, H]];
+      const cosR = Math.cos(-rot), sinR = Math.sin(-rot);
+      for (let gx = 0; gx <= steps; gx++)for (let gy = 0; gy <= steps; gy++) {
+        const px = W * 0.15 + W * 0.7 * gx / steps, py = H * 0.15 + H * 0.7 * gy / steps;
+        let count = 0;
+        nodes.forEach(nd => {
+          for (const [ox, oy] of offs) {
+            let dx = nd.x - (px + ox), dy = nd.y - (py + oy);
+            const rx = dx * cosR - dy * sinR, ry = dx * sinR + dy * cosR;
+            let nx2, ny2;
+            if (isTyped) { nx2 = (rx / curSize + 0.5) * szW; ny2 = (ry / curSize + 0.5) * szH; }
+            else { nx2 = (rx / W + 0.5) * szW; ny2 = (ry / H + 0.5) * szH; }
+            const ppx = Math.round(nx2), ppy = Math.round(ny2);
+            if (ppx >= 0 && ppx < szW && ppy >= 0 && ppy < szH && imgData.data[(ppy * szW + ppx) * 4] < 128) count++;
+          }
+        });
+        const dist = Math.sqrt((px - cx0) * (px - cx0) + (py - cy0) * (py - cy0));
+        const score = count * (1 - (dist / maxDist) * 0.3);
+        if (score > bestScore) { bestScore = score; best = { x: px, y: py }; }
+      }
+      if (best) setCPos(best); update();
+    }
+    async function doPlay() {
+      if (aN.size === 0 || playing) return;
+      if (!toneStarted) { await Tone.start(); toneStarted = true; }
+      if (synth) synth.dispose();
+      synth = new Tone.Synth({ oscillator: { type: WAVES[waveIdx][0] }, envelope: { attack: 0.01, decay: 1.2, sustain: 0.1, release: 1.5 } }).toDestination();
+      playing = true; render();
+      const nodes = genNodes();
+      const ap = [...new Set(nodes.filter(n => aN.has(n.id)).map(n => n.pitch))];
+      let ordered;
+      if (toneRowOrder && toneRowOrder.length === ap.length) ordered = toneRowOrder;
+      else { ap.sort((a, b) => a - b); ordered = ap; }
+      const now = Tone.now(), sp = 0.3;
+      ordered.forEach((pitch, i) => {
+        const oct = 3 + Math.floor(i / 6);
+        try {
+          synth.triggerAttackRelease(P_SYN[pitch] + oct, "4n", now + i * sp);
+          Tone.Draw.schedule(() => {
+            activePitch = pitch;
+            render();
+          }, now + i * sp);
+        } catch (e) { }
+      });
+      Tone.Draw.schedule(() => {
+        activePitch = null;
+        playing = false;
+        render();
+      }, now + ordered.length * sp + 0.5);
+    }
+
+    /* ── desktop row 2 ── */
+    function buildRow2() {
+      const r2 = document.getElementById("drow2");
+      r2.innerHTML = "";
+      r2.className = "drow2 panel-anim"; // smooth entrance
+
+      if (mode === "type") {
+        const inp = document.createElement("input"); inp.type = "text"; inp.id = "charInput"; inp.value = typeCh; inp.placeholder = ""; inp.autocomplete = "off";
+        inp.addEventListener("compositionstart", () => { isComposing = true; });
+        inp.addEventListener("compositionend", e => { isComposing = false; const v = e.target.value; if (v.length > 0) { typeCh = v.slice(-1); inp.value = typeCh; typePos = { x: W / 2, y: H / 2 }; toneRowOrder = null; update(); } });
+        inp.addEventListener("input", e => { if (!isComposing) { const v = e.target.value; if (v.length > 0) { typeCh = v.slice(-1); inp.value = typeCh; typePos = { x: W / 2, y: H / 2 }; toneRowOrder = null; update(); } } });
+        r2.appendChild(inp);
+        addLabeledSlider(r2, "size", "0.15", "1.8", "0.02", typeSc, function (v) { typeSc = v; showSc = true; clearTimeout(scTm); scTm = setTimeout(() => { showSc = false; render(); }, 800); update(); });
+        addKnob(r2, "tilt", typeRot, function (v) { typeRot = v; showRot = true; clearTimeout(rotTm); rotTm = setTimeout(() => { showRot = false; render(); }, 800); update(); });
+      } else {
+        const bClr = document.createElement("button"); bClr.innerHTML = svgClear; bClr.onclick = () => { clearDraw(); };
+        r2.appendChild(bClr);
+        const bLock = document.createElement("button"); bLock.textContent = locked ? "🔒" : "🔓"; bLock.className = locked ? "on" : "";
+        bLock.onclick = () => { locked = !locked; cv.style.cursor = mode === "draw" && !locked ? "crosshair" : "grab"; buildRow2(); buildSheetMode(); update(); };
+        r2.appendChild(bLock);
+        if (locked) {
+          addLabeledSlider(r2, "size", "0.3", "2.5", "0.02", drawSc, function (v) { drawSc = v; showSc = true; clearTimeout(scTm); scTm = setTimeout(() => { showSc = false; render(); }, 800); update(); });
+          addKnob(r2, "tilt", drawRot, function (v) { drawRot = v; showRot = true; clearTimeout(rotTm); rotTm = setTimeout(() => { showRot = false; render(); }, 800); update(); });
+        }
+      }
+    }
+
+    function addKnob(parent, label, val, cb) {
+      const w = document.createElement("div"); w.className = "knob-wrap";
+      const k = document.createElement("div"); k.className = "knob";
+      const ind = document.createElement("div"); ind.className = "knob-indicator";
+
+      // Setup initial rotation
+      ind.style.transform = `translate(-50%, -50%) rotate(${val}rad) translateY(-8px)`;
+      k.appendChild(ind);
+
+      let isDragging = false;
+      let startY = 0;
+      let startVal = val;
+
+      const onMove = (e) => {
+        if (!isDragging) return;
+        const cy = e.touches ? e.touches[0].clientY : e.clientY;
+        const deltaY = startY - cy;
+        let newVal = startVal + (deltaY * 0.02); // sensitivity
+        // Wrap between -PI and PI
+        while (newVal > Math.PI) newVal -= Math.PI * 2;
+        while (newVal < -Math.PI) newVal += Math.PI * 2;
+
+        ind.style.transform = `translate(-50%, -50%) rotate(${newVal}rad) translateY(-8px)`;
+        cb(newVal);
+      };
+
+      const onUp = () => {
+        isDragging = false;
+        document.removeEventListener("mousemove", onMove);
+        document.removeEventListener("touchmove", onMove);
+        document.removeEventListener("mouseup", onUp);
+        document.removeEventListener("touchend", onUp);
+      };
+
+      const onDown = (e) => {
+        e.preventDefault();
+        isDragging = true;
+        startY = e.touches ? e.touches[0].clientY : e.clientY;
+        // current value could have changed externally, so we need to track it via getter or trust callback flow
+        startVal = mode === "type" ? typeRot : drawRot;
+        document.addEventListener("mousemove", onMove);
+        document.addEventListener("touchmove", onMove, { passive: false });
+        document.addEventListener("mouseup", onUp);
+        document.addEventListener("touchend", onUp);
+      };
+
+      k.addEventListener("mousedown", onDown);
+      k.addEventListener("touchstart", onDown, { passive: false });
+
+      const l = document.createElement("span"); l.className = "knob-lbl"; l.textContent = label;
+      w.append(k, l); parent.appendChild(w);
+    }
+
+    function addLabeledSlider(parent, label, min, max, step, val, cb) {
+      const w = document.createElement("div"); w.className = "sld-wrap";
+      const s = document.createElement("input"); s.type = "range"; s.min = min; s.max = max; s.step = step; s.value = val;
+      s.oninput = function () { cb(parseFloat(this.value)); };
+      const l = document.createElement("span"); l.className = "sld-lbl"; l.textContent = label;
+      w.append(s, l); parent.appendChild(w);
+    }
+
+    /* ── mobile sheet mode ── */
+    function buildSheetMode() {
+      const el = document.getElementById("sheetMode"); el.innerHTML = "";
+      if (mode === "type") {
+        const inp = document.createElement("input"); inp.type = "text"; inp.value = typeCh; inp.placeholder = ""; inp.autocomplete = "off";
+        inp.addEventListener("compositionstart", () => { isComposing = true; });
+        inp.addEventListener("compositionend", e => { isComposing = false; const v = e.target.value; if (v.length > 0) { typeCh = v.slice(-1); inp.value = typeCh; typePos = { x: W / 2, y: H / 2 }; toneRowOrder = null; update(); } });
+        inp.addEventListener("input", e => { if (!isComposing) { const v = e.target.value; if (v.length > 0) { typeCh = v.slice(-1); inp.value = typeCh; typePos = { x: W / 2, y: H / 2 }; toneRowOrder = null; update(); } } });
+        el.appendChild(inp);
+        /* size/tilt handled by two-finger pinch/rotate on canvas */
+      } else {
+        const bClr = document.createElement("button"); bClr.textContent = "\u2715"; bClr.onclick = () => { dPaths = []; curPath = null; locked = false; drawSc = 1.0; drawRot = 0; drawPos = { x: W / 2, y: H / 2 }; toneRowOrder = null; buildRow2(); buildSheetMode(); update(); };
+        el.appendChild(bClr);
+        const bLock = document.createElement("button"); bLock.textContent = locked ? "🔒" : "🔓"; bLock.className = locked ? "on" : "";
+        bLock.onclick = () => { locked = !locked; cv.style.cursor = mode === "draw" && !locked ? "crosshair" : "grab"; buildRow2(); buildSheetMode(); update(); };
+        el.appendChild(bLock);
+        /* size/tilt handled by two-finger pinch/rotate on canvas */
+      }
+    }
+
+    /* ── sheet toggle ── */
+    function toggleSheet() {
+      sheetOpen = !sheetOpen;
+      document.getElementById("sheet").className = sheetOpen ? "sheet open" : "sheet";
+      document.getElementById("overlay").style.display = sheetOpen ? "block" : "none";
+      canvasDisabled = sheetOpen;
+    }
+
+    /* ── pointer / multi-touch ── */
+    function gcp(e) { const r = cv.getBoundingClientRect(); const x = e.touches ? e.touches[0].clientX : e.clientX; const y = e.touches ? e.touches[0].clientY : e.clientY; return { x: (x - r.left) * (W / r.width), y: (y - r.top) * (H / r.height) }; }
+    function getTouches(e) {
+      const r = cv.getBoundingClientRect();
+      const ts = [];
+      for (let i = 0; i < e.touches.length; i++) {
+        ts.push({ x: (e.touches[i].clientX - r.left) * (W / r.width), y: (e.touches[i].clientY - r.top) * (H / r.height) });
+      }
+      return ts;
+    }
+    function touchDist(a, b) { return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2); }
+    function touchAngle(a, b) { return Math.atan2(b.y - a.y, b.x - a.x); }
+
+    cv.addEventListener("mousedown", pDown); cv.addEventListener("mousemove", pMove); cv.addEventListener("mouseup", pUp); cv.addEventListener("mouseleave", pUp);
+    cv.addEventListener("touchstart", tDown, { passive: false }); cv.addEventListener("touchmove", tMove, { passive: false }); cv.addEventListener("touchend", tUp); cv.addEventListener("touchcancel", tUp);
+
+    function pDown(e) {
+      if (canvasDisabled) return; e.preventDefault(); const p = gcp(e);
+      if (mode === "draw" && !locked) { curPath = [p]; }
+      else { dragging = true; const pos = cPos(); dragStart = { x: p.x - pos.x, y: p.y - pos.y }; }
+    }
+    function pMove(e) {
+      if (canvasDisabled) return; e.preventDefault(); const p = gcp(e);
+      if (mode === "draw" && !locked && curPath) { curPath.push({ x: wrap(p.x, 0, W), y: wrap(p.y, 0, H) }); render(); }
+      else if (dragging && dragStart) { setCPos({ x: wrap(p.x - dragStart.x, -W * 0.5, W * 1.5), y: wrap(p.y - dragStart.y, -H * 0.5, H * 1.5) }); update(); }
+    }
+    function pUp() {
+      if (canvasDisabled) return;
+      if (mode === "draw" && !locked && curPath && curPath.length > 1) { dPaths.push(curPath); }
+      curPath = null; dragging = false; dragStart = null; update();
+    }
+
+    /* touch handlers with 2-finger pinch/rotate */
+    function tDown(e) {
+      if (canvasDisabled) return; e.preventDefault();
+      const ts = getTouches(e);
+      if (ts.length === 2) {
+        /* start pinch/rotate */
+        pinchStartDist = touchDist(ts[0], ts[1]);
+        pinchStartSc = cSc();
+        pinchStartAngle = touchAngle(ts[0], ts[1]);
+        pinchStartRot = cRot();
+        dragging = false; curPath = null; /* cancel any single-finger action */
+      } else if (ts.length === 1) {
+        const p = ts[0];
+        if (mode === "draw" && !locked) { curPath = [p]; }
+        else { dragging = true; const pos = cPos(); dragStart = { x: p.x - pos.x, y: p.y - pos.y }; }
+      }
+    }
+    function tMove(e) {
+      if (canvasDisabled) return; e.preventDefault();
+      const ts = getTouches(e);
+      if (ts.length === 2 && pinchStartDist !== null) {
+        /* pinch = scale */
+        const dist = touchDist(ts[0], ts[1]);
+        const scaleRatio = dist / pinchStartDist;
+        let newSc = pinchStartSc * scaleRatio;
+        if (mode === "type") { newSc = Math.max(0.15, Math.min(1.8, newSc)); typeSc = newSc; }
+        else { newSc = Math.max(0.3, Math.min(2.5, newSc)); drawSc = newSc; }
+        showSc = true; clearTimeout(scTm); scTm = setTimeout(() => { showSc = false; render(); }, 800);
+        /* rotate */
+        const angle = touchAngle(ts[0], ts[1]);
+        let newRot = pinchStartRot + (angle - pinchStartAngle);
+        while (newRot > Math.PI) newRot -= Math.PI * 2;
+        while (newRot < -Math.PI) newRot += Math.PI * 2;
+        if (mode === "type") typeRot = newRot; else drawRot = newRot;
+        showRot = true; clearTimeout(rotTm); rotTm = setTimeout(() => { showRot = false; render(); }, 800);
+        update();
+      } else if (ts.length === 1 && pinchStartDist === null) {
+        const p = ts[0];
+        if (mode === "draw" && !locked && curPath) { curPath.push({ x: wrap(p.x, 0, W), y: wrap(p.y, 0, H) }); render(); }
+        else if (dragging && dragStart) { setCPos({ x: wrap(p.x - dragStart.x, -W * 0.5, W * 1.5), y: wrap(p.y - dragStart.y, -H * 0.5, H * 1.5) }); update(); }
+      }
+    }
+    function tUp(e) {
+      if (canvasDisabled) return;
+      if (e.touches.length < 2) { pinchStartDist = null; pinchStartAngle = null; }
+      if (e.touches.length === 0) {
+        if (mode === "draw" && !locked && curPath && curPath.length > 1) { dPaths.push(curPath); }
+        curPath = null; dragging = false; dragStart = null;
+        pinchStartDist = null; pinchStartAngle = null;
+        update();
+      }
+    }
+
+    /* ── resize ── */
+    function resize() {
+      const isMobile = window.innerWidth <= 680;
+      const area = document.querySelector(".canvas-area");
+      const rect = area.getBoundingClientRect();
+      const maxW = Math.min(rect.width - 50, 1000); /* 50 for density slider */
+      W = maxW;
+      H = isMobile ? Math.max(rect.height - 30, 180) : Math.min(W * 0.7, 560);
+      /* size density track to match canvas height */
+      const dt = document.getElementById("densTrack");
+      if (dt) { dt.style.height = H + "px"; }
+      cv.style.cursor = mode === "draw" && !locked ? "crosshair" : "grab";
+      update();
+    }
+    window.addEventListener("resize", resize);
+
+    /* prevent double-tap zoom */
+    let lastTap = 0;
+    document.addEventListener("touchend", function (e) {
+      const now = Date.now(); if (now - lastTap < 300) { e.preventDefault(); } lastTap = now;
+    }, { passive: false });
+
+    /* ── init ── */
+    (function init() {
+      ["tcSel", "tcSelM"].forEach(id => {
+        const sel = document.getElementById(id);
+        P_DISP.forEach((n, i) => { const o = document.createElement("option"); o.value = i; o.textContent = n; sel.appendChild(o); });
+      });
+      const isMobile = window.innerWidth <= 680;
+      if (isMobile) { density = 5; document.getElementById("densSliderM").value = 5; }
+      resize();
+      typePos = { x: W / 2, y: H / 2 };
+      drawPos = { x: W / 2, y: H / 2 };
+      buildRow2(); buildSheetMode();
+    })();
+  </script>
+</body>
+
+</html>

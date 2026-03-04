@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>Morse Sequencer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0a0a0a; --surface: #141414; --surface2: #1a1a1a; --surface3: #222;
+    --border: #2a2a2a; --text: #e8e4dd; --text2: #888; --text3: #555;
+    --amber: #d4912a; --amber-dim: rgba(212,145,42,0.15); --amber-glow: rgba(212,145,42,0.4);
+    --dot-color: #d4912a; --dash-color: #c27f1f;
+  }
+
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text);
+    display: flex; flex-direction: column; position: fixed; inset: 0;
+    -webkit-user-select: none; user-select: none;
+  }
+
+  /* ── TOP BAR ── */
+  .top-bar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px; border-bottom: 1px solid var(--border);
+    flex-shrink: 0; background: var(--surface); z-index: 10;
+  }
+  .back-btn {
+    width: 36px; height: 36px; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--surface2); color: var(--text2); font-size: 18px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+  }
+  .back-btn:hover { border-color: var(--amber); color: var(--amber); }
+  .app-title {
+    font-family: 'JetBrains Mono', monospace; font-weight: 600;
+    font-size: 15px; letter-spacing: 0.5px; color: var(--text);
+  }
+  .app-title span { color: var(--amber); }
+
+  /* ── INPUT AREA ── */
+  .input-area {
+    display: flex; gap: 8px; padding: 10px 14px; flex-shrink: 0;
+    border-bottom: 1px solid var(--border); background: var(--surface);
+  }
+  .text-input {
+    flex: 1; padding: 10px 14px; border-radius: 8px;
+    border: 1px solid var(--border); background: var(--surface2);
+    color: var(--text); font-family: 'Inter', sans-serif; font-size: 16px;
+    outline: none; transition: border-color 0.2s;
+  }
+  .text-input:focus { border-color: var(--amber); }
+  .text-input::placeholder { color: var(--text3); }
+  .encode-btn {
+    padding: 10px 20px; border-radius: 8px; border: none;
+    background: var(--amber); color: #000; font-weight: 600;
+    font-size: 14px; cursor: pointer; white-space: nowrap;
+    transition: all 0.2s; font-family: 'Inter', sans-serif;
+  }
+  .encode-btn:hover { filter: brightness(1.15); }
+  .encode-btn:active { transform: scale(0.97); }
+
+  /* ── LANGUAGE TABS ── */
+  .lang-tabs {
+    display: flex; gap: 4px; padding: 8px 14px; flex-shrink: 0;
+    border-bottom: 1px solid var(--border); background: var(--surface);
+  }
+  .lang-tab {
+    padding: 6px 16px; border-radius: 6px; border: 1px solid var(--border);
+    background: transparent; color: var(--text2); font-size: 12px;
+    font-weight: 600; cursor: pointer; transition: all 0.2s;
+    font-family: 'JetBrains Mono', monospace; letter-spacing: 0.5px;
+  }
+  .lang-tab.active {
+    background: var(--amber-dim); border-color: var(--amber); color: var(--amber);
+  }
+  .lang-tab:not(.active):hover { border-color: var(--text3); color: var(--text); }
+  .lang-tab[disabled] { opacity: 0.3; cursor: not-allowed; pointer-events: none; }
+
+  /* ── SEQUENCER ── */
+  .sequencer-wrap {
+    flex: 1; overflow-y: auto; overflow-x: hidden;
+    position: relative; background: var(--bg);
+    -webkit-overflow-scrolling: touch;
+  }
+  .sequencer {
+    position: relative; width: 100%; min-height: 100%;
+    padding: 16px 14px 80px;
+  }
+  .seq-empty {
+    position: absolute; inset: 0; display: flex;
+    align-items: center; justify-content: center;
+    flex-direction: column; gap: 12px; color: var(--text3);
+    font-size: 14px; pointer-events: none;
+  }
+  .seq-empty-morse {
+    font-family: 'JetBrains Mono', monospace; font-size: 22px;
+    letter-spacing: 3px; color: var(--text3); opacity: 0.35;
+  }
+
+  /* character group */
+  .char-group { display: flex; align-items: flex-start; gap: 0; margin-bottom: 2px; }
+  .char-label {
+    width: 48px; flex-shrink: 0; padding-top: 10px;
+    font-family: 'JetBrains Mono', monospace; font-size: 14px;
+    font-weight: 600; color: var(--text2); text-align: right; padding-right: 12px;
+  }
+  .char-morse {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    color: var(--text3); margin-top: 2px;
+  }
+  .char-elements {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: stretch; gap: 3px;
+  }
+
+  /* morse element */
+  .morse-el {
+    border-radius: 5px; cursor: pointer; position: relative;
+    transition: opacity 0.15s, filter 0.15s, box-shadow 0.15s;
+    display: flex; align-items: center; justify-content: center;
+    min-height: 44px; touch-action: manipulation;
+  }
+  .morse-el.dot { height: 44px; background: var(--dot-color); }
+  .morse-el.dash { height: 76px; background: var(--dash-color); }
+  .morse-el .vel-label {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    font-weight: 600; color: rgba(0,0,0,0.5); pointer-events: none;
+  }
+  .morse-el.playing {
+    filter: brightness(1.6) saturate(1.3);
+    box-shadow: 0 0 24px var(--amber-glow), inset 0 0 12px rgba(255,255,255,0.15);
+  }
+  .morse-el[data-vel="0"] { opacity: 0.2; }
+  .morse-el[data-vel="1"] { opacity: 0.45; }
+  .morse-el[data-vel="2"] { opacity: 0.72; }
+  .morse-el[data-vel="3"] { opacity: 1.0; }
+
+  /* word gap */
+  .word-gap {
+    height: 32px; display: flex; align-items: center;
+    padding-left: 48px; margin-bottom: 2px;
+  }
+  .word-gap-line { width: 50px; height: 1px; background: var(--border); }
+  .word-gap-label {
+    font-family: 'JetBrains Mono', monospace; font-size: 9px;
+    color: var(--text3); margin-left: 8px; letter-spacing: 0.5px;
+  }
+
+  .char-gap { height: 14px; margin-bottom: 2px; }
+
+  /* playhead */
+  .playhead {
+    position: absolute; left: 48px; right: 14px; height: 3px;
+    background: var(--amber); border-radius: 2px;
+    box-shadow: 0 0 14px var(--amber-glow);
+    pointer-events: none; z-index: 5; display: none;
+  }
+
+  /* ── CONTROLS ── */
+  .controls {
+    display: flex; flex-wrap: wrap; gap: 10px; padding: 10px 14px;
+    border-top: 1px solid var(--border); background: var(--surface);
+    align-items: center; flex-shrink: 0; z-index: 10;
+  }
+  .ctrl-group { display: flex; align-items: center; gap: 6px; }
+  .ctrl-label {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .ctrl-val {
+    font-family: 'JetBrains Mono', monospace; font-size: 12px;
+    font-weight: 500; color: var(--amber); min-width: 32px; text-align: center;
+  }
+  .ctrl-slider {
+    -webkit-appearance: none; appearance: none; width: 80px; height: 4px;
+    background: var(--border); border-radius: 2px; outline: none; cursor: pointer;
+  }
+  .ctrl-slider::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 16px; height: 16px;
+    border-radius: 50%; background: var(--amber); cursor: pointer;
+    box-shadow: 0 0 6px var(--amber-glow);
+  }
+  .ctrl-slider::-moz-range-thumb {
+    width: 16px; height: 16px; border-radius: 50%;
+    background: var(--amber); border: none; cursor: pointer;
+  }
+  .ctrl-btn {
+    width: 42px; height: 42px; border-radius: 10px;
+    border: 1px solid var(--border); background: var(--surface2);
+    color: var(--text2); font-size: 18px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s; flex-shrink: 0;
+  }
+  .ctrl-btn:hover { border-color: var(--amber); color: var(--amber); }
+  .ctrl-btn.active { background: var(--amber-dim); border-color: var(--amber); color: var(--amber); }
+  .ctrl-btn.play-btn {
+    width: 50px; height: 50px; border-radius: 50%;
+    background: var(--amber); border: none; color: #000; font-size: 22px;
+  }
+  .ctrl-btn.play-btn:hover { filter: brightness(1.15); }
+  .ctrl-btn.play-btn.playing { background: #c44; }
+
+  .sound-toggle {
+    padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border);
+    background: var(--surface2); color: var(--text2); font-size: 11px;
+    font-weight: 600; cursor: pointer; transition: all 0.2s;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .sound-toggle:hover { border-color: var(--text3); }
+
+  .pitch-select {
+    padding: 6px 8px; border-radius: 6px; border: 1px solid var(--border);
+    background: var(--surface2); color: var(--text);
+    font-family: 'JetBrains Mono', monospace; font-size: 12px;
+    outline: none; cursor: pointer;
+  }
+  .pitch-select:focus { border-color: var(--amber); }
+
+  /* scrollbar */
+  .sequencer-wrap::-webkit-scrollbar { width: 4px; }
+  .sequencer-wrap::-webkit-scrollbar-track { background: transparent; }
+  .sequencer-wrap::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  button:focus, input:focus, select:focus { outline: none; }
+
+  @media (max-width: 600px) {
+    .top-bar { padding: 8px 10px; }
+    .input-area { padding: 8px 10px; }
+    .lang-tabs { padding: 6px 10px; }
+    .sequencer { padding: 12px 8px 60px; }
+    .controls { padding: 8px 10px; gap: 6px; }
+    .ctrl-slider { width: 56px; }
+    .char-label { width: 36px; font-size: 12px; padding-right: 8px; }
+    .morse-el.dot { height: 40px; }
+    .morse-el.dash { height: 68px; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="top-bar">
+    <button class="back-btn" onclick="window.location.href='index.html'" title="Home">‹</button>
+    <div class="app-title">MORSE<span>SEQ</span></div>
+  </div>
+
+  <div class="input-area">
+    <input type="text" class="text-input" id="textInput" placeholder="Type a phrase…" autocomplete="off" spellcheck="false">
+    <button class="encode-btn" id="encodeBtn">ENCODE</button>
+  </div>
+
+  <div class="lang-tabs">
+    <button class="lang-tab active" data-lang="en">EN</button>
+    <button class="lang-tab" data-lang="zh" disabled title="Coming soon">ZH</button>
+    <button class="lang-tab" data-lang="ja" disabled title="Coming soon">JA</button>
+    <button class="lang-tab" data-lang="ko" disabled title="Coming soon">KO</button>
+  </div>
+
+  <div class="sequencer-wrap" id="seqWrap">
+    <div class="sequencer" id="sequencer">
+      <div class="seq-empty" id="seqEmpty">
+        <div class="seq-empty-morse">· · · &nbsp; — — — &nbsp; · · ·</div>
+        <div>Type a phrase and hit ENCODE</div>
+      </div>
+      <div class="playhead" id="playhead"></div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button class="ctrl-btn play-btn" id="playBtn" title="Play / Stop">▶</button>
+    <button class="ctrl-btn" id="loopBtn" title="Loop">⟳</button>
+
+    <div class="ctrl-group">
+      <span class="ctrl-label">BPM</span>
+      <input type="range" class="ctrl-slider" id="bpmSlider" min="40" max="240" value="120">
+      <span class="ctrl-val" id="bpmVal">120</span>
+    </div>
+
+    <div class="ctrl-group">
+      <span class="ctrl-label">NOTE</span>
+      <select class="pitch-select" id="pitchSelect">
+        <option value="C3">C3</option><option value="D3">D3</option><option value="E3">E3</option>
+        <option value="F3">F3</option><option value="G3">G3</option><option value="A3">A3</option>
+        <option value="B3">B3</option>
+        <option value="C4" selected>C4</option><option value="D4">D4</option><option value="E4">E4</option>
+        <option value="F4">F4</option><option value="G4">G4</option><option value="A4">A4</option>
+        <option value="B4">B4</option>
+        <option value="C5">C5</option><option value="D5">D5</option><option value="E5">E5</option>
+        <option value="F5">F5</option><option value="G5">G5</option><option value="A5">A5</option>
+      </select>
+    </div>
+
+    <button class="sound-toggle" id="soundToggle">BEEP</button>
+  </div>
+
+<script>
+/* ═══════════════════════════════════════════
+   ITU INTERNATIONAL MORSE
+   ═══════════════════════════════════════════ */
+const MORSE = {
+  'A':'.-','B':'-...','C':'-.-.','D':'-..','E':'.','F':'..-.','G':'--.',
+  'H':'....','I':'..','J':'.---','K':'-.-','L':'.-..','M':'--','N':'-.',
+  'O':'---','P':'.--.','Q':'--.-','R':'.-.','S':'...','T':'-','U':'..-',
+  'V':'...-','W':'.--','X':'-..-','Y':'-.--','Z':'--..',
+  '0':'-----','1':'.----','2':'..---','3':'...--','4':'....-','5':'.....',
+  '6':'-....','7':'--...','8':'---..','9':'----.',
+  '.':'.-.-.-',',':'--..--','?':'..--..','!':'-.-.--','/':'-..-.',
+  '(':'-.--.',')':'-.--.-','&':'.-...',':':'---...',';':'-.-.-.',
+  '=':'-...-','+':'.-.-.','-':'-....-','_':'..--.-','"':'.-..-.',
+  '$':'...-..-','@':'.--.-.',"'":'.----.'
+};
+
+/* ═══════════════════════════════════════════
+   STATE
+   ═══════════════════════════════════════════ */
+let sequence = [];
+let elRefs = [];       // { dom, item } for playable elements only
+let isPlaying = false;
+let isLooping = false;
+let playTimeouts = [];
+let bpm = 120;
+let pitch = 'C4';
+let soundMode = 'beep';
+const VEL_LABELS = ['pp','mp','f','ff'];
+const VEL_GAINS = [0.1, 0.28, 0.55, 0.9];
+
+/* ═══════════════════════════════════════════
+   AUDIO
+   ═══════════════════════════════════════════ */
+let audioReady = false;
+async function ensureAudio() {
+  if (audioReady) return;
+  await Tone.start();
+  audioReady = true;
+}
+
+function playTone(durSec, vel) {
+  const gain = VEL_GAINS[vel] * 0.6;
+  if (soundMode === 'beep') {
+    const synth = new Tone.Synth({
+      oscillator: { type: 'sine' },
+      envelope: { attack: 0.005, decay: 0.05, sustain: 0.8, release: 0.08 }
+    }).toDestination();
+    synth.volume.value = Tone.gainToDb(gain);
+    synth.triggerAttackRelease(pitch, durSec);
+    setTimeout(() => synth.dispose(), (durSec + 0.5) * 1000);
+  } else {
+    const synth = new Tone.MembraneSynth({
+      pitchDecay: 0.01, octaves: 2, envelope: { attack: 0.001, decay: durSec * 0.9, sustain: 0, release: 0.05 }
+    }).toDestination();
+    synth.volume.value = Tone.gainToDb(gain);
+    synth.triggerAttackRelease(pitch, durSec);
+    setTimeout(() => synth.dispose(), (durSec + 0.5) * 1000);
+  }
+}
+
+/* ═══════════════════════════════════════════
+   ENCODE
+   ═══════════════════════════════════════════ */
+function encode(text) {
+  const upper = text.toUpperCase().trim();
+  if (!upper) return [];
+  const seq = [];
+  const words = upper.split(/\s+/);
+  let charIdx = 0;
+
+  words.forEach((word, wi) => {
+    for (let ci = 0; ci < word.length; ci++) {
+      const ch = word[ci];
+      const code = MORSE[ch];
+      if (!code) { charIdx++; continue; }
+
+      for (let ei = 0; ei < code.length; ei++) {
+        seq.push({
+          type: code[ei] === '.' ? 'dot' : 'dash',
+          char: ch, code: code, charIdx, vel: 3
+        });
+      }
+      charIdx++;
+      if (ci < word.length - 1) seq.push({ type: 'char-gap' });
+    }
+    if (wi < words.length - 1) seq.push({ type: 'word-gap' });
+  });
+  return seq;
+}
+
+/* ═══════════════════════════════════════════
+   RENDER
+   ═══════════════════════════════════════════ */
+function renderSequencer() {
+  const container = document.getElementById('sequencer');
+  const empty = document.getElementById('seqEmpty');
+  const playhead = document.getElementById('playhead');
+  elRefs = [];
+
+  // clear old content
+  container.querySelectorAll('.char-group,.word-gap,.char-gap').forEach(e => e.remove());
+
+  if (!sequence.length) {
+    empty.style.display = 'flex';
+    playhead.style.display = 'none';
+    return;
+  }
+  empty.style.display = 'none';
+
+  let curCharIdx = -1, group = null, elContainer = null;
+
+  sequence.forEach((item, idx) => {
+    if (item.type === 'word-gap') {
+      if (group) { container.appendChild(group); group = null; curCharIdx = -1; }
+      const g = document.createElement('div');
+      g.className = 'word-gap';
+      g.innerHTML = '<div class="word-gap-line"></div><span class="word-gap-label">SPACE</span>';
+      container.appendChild(g);
+      return;
+    }
+    if (item.type === 'char-gap') {
+      if (group) { container.appendChild(group); group = null; curCharIdx = -1; }
+      const g = document.createElement('div');
+      g.className = 'char-gap';
+      container.appendChild(g);
+      return;
+    }
+
+    // dot or dash
+    if (item.charIdx !== curCharIdx) {
+      if (group) container.appendChild(group);
+      group = document.createElement('div');
+      group.className = 'char-group';
+
+      const labelWrap = document.createElement('div');
+      labelWrap.className = 'char-label';
+      labelWrap.innerHTML = item.char + '<div class="char-morse">' + item.code + '</div>';
+      group.appendChild(labelWrap);
+
+      elContainer = document.createElement('div');
+      elContainer.className = 'char-elements';
+      group.appendChild(elContainer);
+      curCharIdx = item.charIdx;
+    }
+
+    const el = document.createElement('div');
+    el.className = 'morse-el ' + item.type;
+    el.dataset.vel = item.vel;
+    el.innerHTML = '<span class="vel-label">' + VEL_LABELS[item.vel] + '</span>';
+
+    el.addEventListener('click', () => {
+      item.vel = (item.vel + 1) % 4;
+      el.dataset.vel = item.vel;
+      el.querySelector('.vel-label').textContent = VEL_LABELS[item.vel];
+    });
+
+    elContainer.appendChild(el);
+    elRefs.push({ dom: el, item });
+  });
+
+  if (group) container.appendChild(group);
+}
+
+/* ═══════════════════════════════════════════
+   PLAYBACK
+   ═══════════════════════════════════════════ */
+function unitMs() { return 60000 / (bpm * 10); }
+
+function stopPlayback() {
+  isPlaying = false;
+  playTimeouts.forEach(t => clearTimeout(t));
+  playTimeouts = [];
+  elRefs.forEach(r => r.dom.classList.remove('playing'));
+  document.getElementById('playBtn').textContent = '▶';
+  document.getElementById('playBtn').classList.remove('playing');
+  document.getElementById('playhead').style.display = 'none';
+}
+
+async function startPlayback() {
+  await ensureAudio();
+  if (!sequence.length) return;
+  if (isPlaying) { stopPlayback(); return; }
+
+  isPlaying = true;
+  const btn = document.getElementById('playBtn');
+  btn.textContent = '■';
+  btn.classList.add('playing');
+
+  const playhead = document.getElementById('playhead');
+  const wrap = document.getElementById('seqWrap');
+  playhead.style.display = 'block';
+  wrap.scrollTop = 0;
+
+  function schedule() {
+    const u = unitMs();
+    let time = 0;
+    let eIdx = 0;
+
+    sequence.forEach(item => {
+      if (item.type === 'dot' || item.type === 'dash') {
+        const units = item.type === 'dot' ? 1 : 3;
+        const durSec = (u * units) / 1000;
+        const t = time;
+        const capturedIdx = eIdx;
+
+        playTimeouts.push(setTimeout(() => {
+          if (!isPlaying) return;
+          playTone(durSec, item.vel);
+          const ref = elRefs[capturedIdx];
+          if (ref) {
+            ref.dom.classList.add('playing');
+            // move playhead
+            const elRect = ref.dom.getBoundingClientRect();
+            const wrapRect = wrap.getBoundingClientRect();
+            const y = elRect.top - wrapRect.top + wrap.scrollTop + elRect.height / 2;
+            playhead.style.top = y + 'px';
+            // auto-scroll
+            const visTop = wrap.scrollTop;
+            const visBot = visTop + wrap.clientHeight;
+            if (y > visBot - 80 || y < visTop + 40) {
+              wrap.scrollTo({ top: y - wrap.clientHeight / 3, behavior: 'smooth' });
+            }
+          }
+          setTimeout(() => {
+            if (ref) ref.dom.classList.remove('playing');
+          }, u * units * 0.85);
+        }, t));
+
+        time += u * (units + 1); // element + inter-element gap
+        eIdx++;
+      }
+      else if (item.type === 'char-gap') { time += u * 2; } // +2 on top of trailing 1 = 3 total
+      else if (item.type === 'word-gap') { time += u * 6; } // +6 on top of trailing 1 = 7 total
+    });
+
+    playTimeouts.push(setTimeout(() => {
+      if (!isPlaying) return;
+      if (isLooping) {
+        playTimeouts = [];
+        elRefs.forEach(r => r.dom.classList.remove('playing'));
+        wrap.scrollTo({ top: 0, behavior: 'smooth' });
+        setTimeout(() => { if (isPlaying) schedule(); }, 400);
+      } else {
+        stopPlayback();
+      }
+    }, time + u * 3));
+  }
+
+  schedule();
+}
+
+/* ═══════════════════════════════════════════
+   WIRING
+   ═══════════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', () => {
+  const textInput = document.getElementById('textInput');
+  const encodeBtn = document.getElementById('encodeBtn');
+
+  function doEncode() {
+    stopPlayback();
+    sequence = encode(textInput.value);
+    renderSequencer();
+  }
+
+  encodeBtn.addEventListener('click', doEncode);
+  textInput.addEventListener('keydown', e => { if (e.key === 'Enter') doEncode(); });
+
+  let timer = null;
+  textInput.addEventListener('input', () => {
+    clearTimeout(timer);
+    timer = setTimeout(doEncode, 350);
+  });
+
+  document.getElementById('playBtn').addEventListener('click', startPlayback);
+
+  document.getElementById('loopBtn').addEventListener('click', function() {
+    isLooping = !isLooping;
+    this.classList.toggle('active', isLooping);
+  });
+
+  document.getElementById('bpmSlider').addEventListener('input', function() {
+    bpm = parseInt(this.value);
+    document.getElementById('bpmVal').textContent = bpm;
+  });
+
+  document.getElementById('pitchSelect').addEventListener('change', function() {
+    pitch = this.value;
+  });
+
+  document.getElementById('soundToggle').addEventListener('click', function() {
+    soundMode = soundMode === 'beep' ? 'perc' : 'beep';
+    this.textContent = soundMode === 'beep' ? 'BEEP' : 'PERC';
+  });
+
+  // initial focus on mobile
+  if (window.innerWidth > 600) textInput.focus();
+});
+</script>
+</body>
+</html>
