@@ -141,6 +141,29 @@
       color: var(--text3);
     }
 
+    .cjk-toggle, .romanize-toggle {
+      padding: 6px 10px;
+      border-radius: 5px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text3);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: inherit;
+      flex-shrink: 0;
+    }
+    .cjk-toggle:hover, .romanize-toggle:hover {
+      border-color: var(--amber);
+      color: var(--text2);
+    }
+    .cjk-toggle.active, .romanize-toggle.active {
+      background: var(--amber-dim);
+      border-color: var(--amber);
+      color: var(--amber);
+    }
+
     /* ═══ STACKED PREVIEW ═══ */
     .preview-wrap {
       padding: 6px 12px;
@@ -851,6 +874,8 @@
   <div class="input-row">
     <textarea class="text-input" id="textInput" placeholder="type here…" autocomplete="off"
       spellcheck="false" rows="1"></textarea>
+    <button class="cjk-toggle" id="cjkToggle" style="display:none" title="Toggle CJK mode">中</button>
+    <button class="romanize-toggle" id="romanizeBtn" title="Romanize Asian text">Aa</button>
   </div>
 
   <!-- Stacked preview -->
@@ -995,8 +1020,18 @@
       'ㅈ':'.--.',  'ㅊ':'-.-.','ㅋ':'-..-','ㅌ':'--..','ㅍ':'---','ㅎ':'.---',
       'ㄲ':'.-...-..','ㄸ':'-...-...','ㅃ':'.--..--','ㅆ':'--..--.','ㅉ':'.--..--.', 
       'ㅏ':'.','ㅑ':'..','ㅓ':'-','ㅕ':'...','ㅗ':'.-','ㅛ':'-.','ㅜ':'....','ㅠ':'.-.',
-      'ㅡ':'-..','ㅣ':'..-','ㅐ':'--.-','ㅔ':'-.--','ㅒ':'..--.-','ㅖ':'...-.--',
-      'ㅘ':'.-..','ㅙ':'.---.-','ㅚ':'.-..-','ㅝ':'....-','ㅞ':'....-.--','ㅟ':'....-..',  'ㅢ':'-..--..'
+      'ㅡ':'-..','ㅣ':'..-','ㅐ':'--.-','ㅔ':'-.--','ㅒ':'..--.-','ㅖ':'...-.--'
+    };
+    /* Compound vowels → component vowels (sent as sequence in SKATS) */
+    const SKATS_COMPOUND = {
+      'ㅘ':['ㅗ','ㅏ'],'ㅙ':['ㅗ','ㅐ'],'ㅚ':['ㅗ','ㅣ'],
+      'ㅝ':['ㅜ','ㅓ'],'ㅞ':['ㅜ','ㅔ'],'ㅟ':['ㅜ','ㅣ'],'ㅢ':['ㅡ','ㅣ']
+    };
+    /* Compound final consonants → component jamo */
+    const SKATS_COMPOUND_FINAL = {
+      'ㄳ':['ㄱ','ㅅ'],'ㄵ':['ㄴ','ㅈ'],'ㄶ':['ㄴ','ㅎ'],'ㄺ':['ㄹ','ㄱ'],
+      'ㄻ':['ㄹ','ㅁ'],'ㄼ':['ㄹ','ㅂ'],'ㄽ':['ㄹ','ㅅ'],'ㄾ':['ㄹ','ㅌ'],
+      'ㄿ':['ㄹ','ㅍ'],'ㅀ':['ㄹ','ㅎ'],'ㅄ':['ㅂ','ㅅ']
     };
     const KR_INITIALS = ['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
     const KR_MEDIALS = ['ㅏ','ㅐ','ㅑ','ㅒ','ㅓ','ㅔ','ㅕ','ㅖ','ㅗ','ㅘ','ㅙ','ㅚ','ㅛ','ㅜ','ㅝ','ㅞ','ㅟ','ㅠ','ㅡ','ㅢ','ㅣ'];
@@ -1006,58 +1041,72 @@
       const code = ch.charCodeAt(0) - 0xAC00;
       if (code < 0 || code > 11171) return null;
       const fi = code % 28, mid = ((code - fi) / 28) % 21, ini = Math.floor((code - fi) / 28 / 21);
-      const jamo = [KR_INITIALS[ini], KR_MEDIALS[mid]];
-      if (KR_FINALS[fi]) jamo.push(KR_FINALS[fi]);
+      const jamo = [KR_INITIALS[ini]];
+      /* Expand compound vowels */
+      const medial = KR_MEDIALS[mid];
+      if (SKATS_COMPOUND[medial]) jamo.push(...SKATS_COMPOUND[medial]);
+      else jamo.push(medial);
+      /* Expand compound finals */
+      const final = KR_FINALS[fi];
+      if (final) {
+        if (SKATS_COMPOUND_FINAL[final]) jamo.push(...SKATS_COMPOUND_FINAL[final]);
+        else jamo.push(final);
+      }
       return jamo;
     }
 
-    /* ═══ CTC (Chinese Telegraph Code) — Common ~500 ═══ */
+    /* ═══ CTC (Chinese Telegraph Code) — Common ~350, verified from Unihan ═══ */
     const CTC_COMMON = {
-      '的':'4104','一':'0001','是':'2553','不':'0008','了':'0077','在':'1068','人':'0086','有':'2589',
-      '我':'2769','他':'0104','这':'6631','這':'6631','中':'0022','大':'1129','来':'0441','來':'0441',
-      '上':'0006','个':'0057','國':'0948','国':'0948','到':'0451','说':'6133','說':'6133','们':'0101',
-      '們':'0101','为':'4875','為':'4875','和':'0735','你':'0162','地':'0966','出':'0416','会':'2588',
-      '會':'2588','时':'2514','時':'2514','要':'6006','也':'0046','子':'1311','得':'1779','就':'1432',
-      '那':'6719','着':'4253','下':'0007','自':'5765','之':'0024','年':'1628','过':'6609','過':'6609',
-      '后':'0686','後':'1745','作':'0149','里':'6849','裡':'6163','用':'3938','道':'6670','行':'5765',
-      '所':'2430','然':'3560','家':'1367','种':'4430','種':'4430','事':'0057','成':'2052','方':'2455',
-      '多':'1122','经':'4842','經':'4842','么':'0050','麼':'7797','去':'0654','法':'3127','学':'1331',
-      '學':'1331','如':'1172','都':'6757','同':'0681','现':'3799','現':'3799','当':'3093','當':'3093',
-      '没':'3296','沒':'3296','动':'0513','動':'0513','面':'7240','起':'6251','看':'4180','定':'1353',
-      '天':'1131','分':'0433','还':'6636','還':'6636','进':'6631','進':'6631','好':'1170','小':'1420',
-      '部':'6738','其':'0366','些':'0059','主':'0031','样':'2810','樣':'2810','理':'3702','心':'1800',
-      '她':'1126','本':'2609','前':'0467','开':'7030','開':'7030','但':'0111','因':'0987','只':'0706',
-      '从':'0101','從':'1745','想':'2552','实':'1399','實':'1399','日':'2480','三':'0005','已':'1399',
-      '高':'7559','长':'7022','長':'7022','正':'2973','外':'1037','将':'1903','將':'1903','两':'0649',
-      '兩':'0649','门':'7024','門':'7024','与':'0016','點':'7820','点':'7820','最':'2586','问':'7024',
-      '問':'7024','太':'1132','十':'0577','回':'3069','知':'4243','百':'4102','名':'0682','月':'2588',
-      '明':'2494','次':'2870','老':'5765','四':'0934','无':'2610','無':'2610','新':'2450','把':'2145',
-      '话':'6133','話':'6133','很':'1756','向':'0641','被':'4253','别':'0481','像':'0120','手':'2087',
-      '体':'0389','體':'7555','再':'0424','走':'6264','干':'0021','死':'2743','意':'2556','体':'0389',
-      '电':'7193','電':'7193','水':'3055','五':'0107','书':'2468','書':'2468','二':'0002','机':'2623',
-      '機':'2623','头':'7025','頭':'7207','力':'0472','世':'0013','间':'7044','間':'7044','白':'4101',
-      '先':'0281','海':'3189','并':'0393','對':'1417','对':'1417','可':'0668','口':'0656','什':'0088',
-      '九':'0043','比':'3024','八':'0044','七':'0003','六':'0362','十':'0577','字':'1316','花':'5363',
-      '山':'1472','金':'6855','木':'2611','火':'3499','土':'0960','風':'7591','风':'7591','雨':'7183',
-      '雪':'7185','云':'0061','雲':'7189','男':'3721','女':'1158','父':'3236','母':'3029','兄':'0398',
-      '弟':'1527','姐':'1198','妹':'1199','友':'0645','車':'6508','车':'6508','路':'6424','飛':'7378',
-      '飞':'7378','馬':'7456','马':'7456','牛':'3662','羊':'5765','鸟':'7694','鳥':'7694','魚':'7625',
-      '鱼':'7625','龙':'7893','龍':'7893','虎':'5765','春':'2504','夏':'1115','秋':'4428','冬':'0543',
-      '東':'2635','东':'2635','南':'0589','西':'6007','北':'0554','左':'1563','右':'0651','前':'0467',
-      '後':'1745','后':'0686','生':'3932','活':'3268','工':'1562','商':'0560','兵':'0445','王':'3769',
-      '李':'2621','张':'1728','張':'1728','陈':'7115','陳':'7115','林':'2651','黄':'7806','黃':'7806',
-      '赵':'6392','趙':'6392','周':'0939','吴':'0702','吳':'0702','刘':'0491','劉':'0491','杨':'2799',
-      '楊':'2799','孙':'1327','孫':'1327','食':'7375','飯':'7375','茶':'5765','酒':'6884','肉':'5765',
-      '米':'4717','飲':'7381','饮':'7381','吃':'0645','喝':'0828','买':'6025','買':'6025','卖':'6025',
-      '賣':'6025','穿':'4514','住':'0105','愛':'1947','爱':'1947','恨':'1801','怕':'1802','笑':'4550',
-      '哭':'0657','紅':'4849','红':'4849','藍':'5765','蓝':'5765','黑':'7815','青':'7230','色':'5765',
-      '光':'0342','音':'7299','声':'1154','聲':'5765','影':'1819','夢':'1125','梦':'1125','星':'2450',
-      '空':'4506','雲':'7189','云':'0061','河':'3051','湖':'3265','江':'3068','石':'4258','鐵':'6993',
-      '铁':'6993','銀':'6872','银':'6872','教':'2398','師':'1601','师':'1601','醫':'7178','医':'7178',
-      '病':'4109','药':'5765','藥':'5765','樂':'2799','乐':'2799','歌':'2706','舞':'5765','画':'3780',
-      '畫':'3780','門':'7024','门':'7024','窗':'4518','橋':'2905','桥':'2905','船':'5765','城':'0996',
-      '國':'0948','军':'0504','軍':'6571','平':'1627','安':'1344','危':'0544','戰':'2069','战':'2069',
-      '和':'0735','台':'0669','灣':'3864','湾':'3864','京':'0079','港':'3330','澳':'3380'
+      '的':'4104','一':'0001','是':'2508','不':'0008','了':'0055','在':'0961','人':'0086',
+      '有':'2589','我':'2053','他':'0100','这':'6638','中':'0022','大':'1129','来':'0171',
+      '上':'0006','个':'0020','国':'0948','到':'0451','说':'6141','们':'0226','为':'3634',
+      '和':'0735','你':'0132','地':'0966','出':'0427','会':'2585','时':'2514','要':'6008',
+      '也':'0048','子':'1311','得':'1779','就':'1432','那':'6719','着':'4192','下':'0007',
+      '自':'5261','之':'0037','年':'1628','过':'6665','后':'0683','作':'0155','里':'6849',
+      '用':'3938','道':'6670','行':'5887','所':'2076','然':'3544','家':'1367','种':'4429',
+      '事':'0057','成':'2052','方':'2455','多':'1122','经':'4842','么':'8010','去':'0637',
+      '法':'3127','学':'1331','如':'1172','都':'6757','同':'0681','现':'3807','当':'3981',
+      '没':'3093','动':'0520','面':'7240','起':'6386','看':'4170','定':'1353','天':'1131',
+      '分':'0433','还':'6703','进':'6651','好':'1170','小':'1420','部':'6752','其':'0366',
+      '些':'0067','主':'0031','样':'2876','理':'3810','心':'1800','她':'1247','本':'2609',
+      '前':'0467','开':'7030','但':'0141','因':'0936','只':'0662','从':'1783','想':'1927',
+      '实':'1395','日':'2480','三':'0005','已':'1571','高':'7559','长':'7022','正':'2973',
+      '外':'1120','将':'1412','两':'0357','门':'7024','与':'5280','点':'7820','最':'2584',
+      '问':'0795','太':'1132','十':'0577','回':'0932','知':'4249','百':'4102','名':'0682',
+      '月':'2588','明':'2494','次':'2945','老':'5071','四':'0934','无':'2477','新':'2450',
+      '把':'2116','话':'6114','很':'1771','向':'0686','被':'5926','别':'0446','像':'0288',
+      '手':'2087','体':'7555','再':'0375','走':'6382','干':'1626','死':'2984','意':'1942',
+      '电':'7193','水':'3055','五':'0063','书':'2579','二':'0059','机':'2623','头':'7333',
+      '力':'0500','世':'0013','间':'7035','白':'4101','先':'0341','海':'3189','并':'1629',
+      '对':'1417','可':'0668','口':'0656','什':'0087','九':'0046','比':'3024','八':'0360',
+      '七':'0003','六':'0362','字':'1316','花':'5363','山':'1472','金':'6855','木':'2606',
+      '火':'3499','土':'0960','风':'7364','雨':'7183','雪':'7185','云':'0061','男':'3948',
+      '女':'1166','父':'3637','母':'3018','兄':'0338','弟':'1717','姐':'1195','妹':'1188',
+      '友':'0645','车':'6508','路':'6424','飞':'7378','马':'7456','牛':'3662','羊':'5017',
+      '鸟':'7680','鱼':'7625','龙':'7893','虎':'5706','春':'2504','夏':'1115','秋':'4428',
+      '冬':'0392','东':'2639','南':'0589','西':'6007','北':'0554','左':'1563','右':'0671',
+      '生':'3932','活':'3172','工':'1562','商':'0794','兵':'0365','王':'3769','李':'2621',
+      '张':'1728','陈':'7115','林':'2651','黄':'7806','赵':'6392','周':'0719','吴':'0702',
+      '刘':'0491','杨':'2799','孙':'1327','食':'7380','茶':'5420','酒':'6794','肉':'5131',
+      '米':'4717','饮':'7390','吃':'0676','喝':'0824','买':'6314','卖':'6344','穿':'4502',
+      '住':'0145','爱':'1947','恨':'1868','怕':'1830','笑':'4562','哭':'0770','红':'4767',
+      '蓝':'5663','黑':'7815','青':'7230','色':'5331','光':'0342','音':'7299','声':'5116',
+      '影':'1758','梦':'1125','星':'2502','空':'4500','河':'3109','湖':'3275','江':'3068',
+      '石':'4258','铁':'6993','银':'6892','教':'2403','师':'1597','医':'6829','病':'4016',
+      '药':'5522','乐':'2867','歌':'2960','舞':'5294','画':'3973','窗':'4514','桥':'2890',
+      '船':'5307','城':'1004','军':'6511','平':'1627','安':'1344','危':'0604','战':'2069',
+      '台':'0669','湾':'3494','京':'0079','港':'3263','澳':'3421','曜':'2565',
+      '這':'6638','來':'0171','國':'0948','說':'6141','們':'0226','為':'3634','會':'2585',
+      '時':'2514','過':'6665','後':'0683','種':'4429','經':'4842','麼':'8010','學':'1331',
+      '現':'3807','當':'3981','沒':'3093','動':'0520','還':'6703','進':'6651','樣':'2876',
+      '開':'7030','從':'1783','實':'1395','長':'7022','將':'1412','兩':'0357','門':'7024',
+      '點':'7820','問':'0795','無':'2477','話':'6114','體':'7555','電':'7193','書':'2579',
+      '機':'2623','頭':'7333','間':'7035','對':'1417','車':'6508','飛':'7378','馬':'7456',
+      '鳥':'7680','魚':'7625','龍':'7893','東':'2639','風':'7364','雲':'0061','張':'1728',
+      '陳':'7115','黃':'7806','趙':'6392','吳':'0702','劉':'0491','楊':'2799','孫':'1327',
+      '飯':'7380','飲':'7390','買':'6314','賣':'6344','愛':'1947','紅':'4767','藍':'5663',
+      '聲':'5116','夢':'1125','鐵':'6993','銀':'6892','醫':'6829','藥':'5522','樂':'2867',
+      '畫':'3973','橋':'2890','軍':'6511','戰':'2069','灣':'3494'
     };
     let CTC_FULL = null; /* loaded on demand */
     let ctcLoading = false, ctcPending = null;
@@ -1075,40 +1124,6 @@
       return 'en';
     }
 
-    /* ═══ ENCODE CHARACTER → morse string ═══ */
-    function charToMorse(ch) {
-      const script = charScript(ch);
-      if (script === 'en') {
-        return { morse: MORSE[ch.toUpperCase()] || null, display: ch.toUpperCase(), script: 'en' };
-      }
-      if (script === 'ja') {
-        let kata = ch;
-        if (HIRA2KATA[ch]) kata = HIRA2KATA[ch];
-        const m = WABUN[kata];
-        return { morse: m || null, display: ch, script: 'ja' };
-      }
-      if (script === 'ko') {
-        const jamo = decomposeKorean(ch);
-        if (!jamo) return { morse: null, display: ch, script: 'ko' };
-        const parts = jamo.map(j => SKATS_JAMO[j]).filter(Boolean);
-        return { morse: parts.length ? parts.join(' ') : null, display: ch, jamo: jamo.join(''), script: 'ko' };
-      }
-      if (script === 'zh') {
-        const dict = CTC_FULL || CTC_COMMON;
-        const code = dict[ch];
-        if (code) {
-          const digits = code.split('').map(d => MORSE[d]).join(' ');
-          return { morse: digits, display: ch, ctc: code, script: 'zh' };
-        }
-        if (!CTC_FULL && !ctcLoading) {
-          /* mark as needing full dict */
-          return { morse: null, display: ch, script: 'zh', needsDict: true };
-        }
-        return { morse: null, display: ch, script: 'zh' };
-      }
-      return { morse: null, display: ch, script: 'en' };
-    }
-
     let sequence = [], elRefsV = [], elRefsH = [];
     let isPlaying = false, isLooping = false, playTimeouts = [];
     let bpm = 120, pitch = 'C4', soundMode = 'beep', layoutMode = 'desktop';
@@ -1118,6 +1133,97 @@
     /* ═══ IME KANA TRACKING ═══ */
     let imeKanaCache = new Map(); /* "東京" → "とうきょう" */
     let lastCompKana = '', isComposing = false;
+    let cjkForceJa = false; /* 中↔日 override */
+    let romanize = false; /* Aa romanization toggle */
+
+    /* ═══ ROMANIZATION TABLES ═══ */
+    const ROMAJI = {
+      'ア':'a','イ':'i','ウ':'u','エ':'e','オ':'o',
+      'カ':'ka','キ':'ki','ク':'ku','ケ':'ke','コ':'ko',
+      'サ':'sa','シ':'shi','ス':'su','セ':'se','ソ':'so',
+      'タ':'ta','チ':'chi','ツ':'tsu','テ':'te','ト':'to',
+      'ナ':'na','ニ':'ni','ヌ':'nu','ネ':'ne','ノ':'no',
+      'ハ':'ha','ヒ':'hi','フ':'fu','ヘ':'he','ホ':'ho',
+      'マ':'ma','ミ':'mi','ム':'mu','メ':'me','モ':'mo',
+      'ヤ':'ya','ユ':'yu','ヨ':'yo',
+      'ラ':'ra','リ':'ri','ル':'ru','レ':'re','ロ':'ro',
+      'ワ':'wa','ヰ':'wi','ヱ':'we','ヲ':'wo','ン':'n',
+      'ガ':'ga','ギ':'gi','グ':'gu','ゲ':'ge','ゴ':'go',
+      'ザ':'za','ジ':'ji','ズ':'zu','ゼ':'ze','ゾ':'zo',
+      'ダ':'da','ヂ':'di','ヅ':'du','デ':'de','ド':'do',
+      'バ':'ba','ビ':'bi','ブ':'bu','ベ':'be','ボ':'bo',
+      'パ':'pa','ピ':'pi','プ':'pu','ペ':'pe','ポ':'po',
+      'ャ':'ya','ュ':'yu','ョ':'yo','ッ':'tsu','ー':'-'
+    };
+    /* Build hiragana romaji from katakana */
+    const ROMAJI_H = {};
+    for (const [kata, rom] of Object.entries(ROMAJI)) {
+      const hira = String.fromCharCode(kata.charCodeAt(0) - 0x60);
+      if (hira.charCodeAt(0) >= 0x3040 && hira.charCodeAt(0) <= 0x309F) ROMAJI_H[hira] = rom;
+    }
+    Object.assign(ROMAJI, ROMAJI_H);
+
+    const PINYIN_COMMON = {
+      '的':'de','一':'yī','是':'shì','不':'bù','了':'le','在':'zài','人':'rén','有':'yǒu',
+      '我':'wǒ','他':'tā','这':'zhè','中':'zhōng','大':'dà','来':'lái','上':'shàng','个':'gè',
+      '国':'guó','到':'dào','说':'shuō','们':'men','为':'wèi','和':'hé','你':'nǐ','地':'dì',
+      '出':'chū','会':'huì','时':'shí','要':'yào','也':'yě','子':'zǐ','得':'de','就':'jiù',
+      '那':'nà','着':'zhe','下':'xià','自':'zì','之':'zhī','年':'nián','过':'guò','后':'hòu',
+      '作':'zuò','里':'lǐ','用':'yòng','道':'dào','行':'xíng','所':'suǒ','然':'rán','家':'jiā',
+      '种':'zhǒng','事':'shì','成':'chéng','方':'fāng','多':'duō','经':'jīng','去':'qù',
+      '法':'fǎ','学':'xué','如':'rú','都':'dōu','同':'tóng','现':'xiàn','当':'dāng','没':'méi',
+      '动':'dòng','面':'miàn','起':'qǐ','看':'kàn','定':'dìng','天':'tiān','分':'fēn',
+      '还':'hái','进':'jìn','好':'hǎo','小':'xiǎo','部':'bù','其':'qí','些':'xiē','主':'zhǔ',
+      '样':'yàng','理':'lǐ','心':'xīn','她':'tā','本':'běn','前':'qián','开':'kāi','但':'dàn',
+      '因':'yīn','只':'zhǐ','从':'cóng','想':'xiǎng','实':'shí','日':'rì','三':'sān','已':'yǐ',
+      '高':'gāo','长':'cháng','正':'zhèng','外':'wài','将':'jiāng','两':'liǎng','门':'mén',
+      '与':'yǔ','点':'diǎn','最':'zuì','问':'wèn','太':'tài','十':'shí','回':'huí','知':'zhī',
+      '百':'bǎi','名':'míng','月':'yuè','明':'míng','老':'lǎo','四':'sì','无':'wú','新':'xīn',
+      '话':'huà','很':'hěn','向':'xiàng','被':'bèi','别':'bié','手':'shǒu','体':'tǐ',
+      '走':'zǒu','死':'sǐ','意':'yì','电':'diàn','水':'shuǐ','五':'wǔ','书':'shū','二':'èr',
+      '机':'jī','头':'tóu','力':'lì','世':'shì','间':'jiān','白':'bái','先':'xiān','海':'hǎi',
+      '可':'kě','口':'kǒu','九':'jiǔ','八':'bā','七':'qī','六':'liù','字':'zì','花':'huā',
+      '山':'shān','金':'jīn','木':'mù','火':'huǒ','土':'tǔ','风':'fēng','雨':'yǔ','雪':'xuě',
+      '云':'yún','男':'nán','女':'nǚ','友':'yǒu','车':'chē','路':'lù','飞':'fēi','马':'mǎ',
+      '牛':'niú','羊':'yáng','鸟':'niǎo','鱼':'yú','龙':'lóng','虎':'hǔ','春':'chūn','夏':'xià',
+      '秋':'qiū','冬':'dōng','东':'dōng','南':'nán','西':'xī','北':'běi','左':'zuǒ','右':'yòu',
+      '生':'shēng','活':'huó','工':'gōng','王':'wáng','李':'lǐ','张':'zhāng','林':'lín',
+      '食':'shí','茶':'chá','酒':'jiǔ','肉':'ròu','米':'mǐ','爱':'ài','红':'hóng','蓝':'lán',
+      '黑':'hēi','青':'qīng','色':'sè','光':'guāng','音':'yīn','声':'shēng','影':'yǐng',
+      '星':'xīng','空':'kōng','河':'hé','湖':'hú','江':'jiāng','石':'shí','教':'jiào',
+      '病':'bìng','药':'yào','乐':'lè','歌':'gē','舞':'wǔ','画':'huà','船':'chuán','城':'chéng',
+      '军':'jūn','平':'píng','安':'ān','战':'zhàn','京':'jīng','港':'gǎng','台':'tái','湾':'wān',
+      '曜':'yào'
+    };
+    /* Trad→pinyin: reuse simplified pinyin */
+    '這zhè,來lái,國guó,說shuō,們men,為wèi,會huì,時shí,過guò,後hòu,種zhǒng,經jīng,學xué,現xiàn,當dāng,沒méi,動dòng,還hái,進jìn,樣yàng,開kāi,從cóng,實shí,長cháng,將jiāng,兩liǎng,門mén,點diǎn,問wèn,無wú,話huà,體tǐ,電diàn,書shū,機jī,頭tóu,間jiān,對duì,車chē,飛fēi,馬mǎ,鳥niǎo,魚yú,龍lóng,東dōng,風fēng,雲yún,張zhāng,陳chén,黃huáng,愛ài,紅hóng,藍lán,聲shēng,夢mèng,鐵tiě,銀yín,醫yī,藥yào,樂lè,畫huà,橋qiáo,軍jūn,戰zhàn,灣wān'.split(',').forEach(p => {
+      const ch = p[0], py = p.slice(1);
+      PINYIN_COMMON[ch] = py;
+    });
+
+    /* Korean jamo → revised romanization */
+    const KR_ROM_INI = {'ㄱ':'g','ㄲ':'kk','ㄴ':'n','ㄷ':'d','ㄸ':'tt','ㄹ':'r','ㅁ':'m','ㅂ':'b','ㅃ':'pp','ㅅ':'s','ㅆ':'ss','ㅇ':'','ㅈ':'j','ㅉ':'jj','ㅊ':'ch','ㅋ':'k','ㅌ':'t','ㅍ':'p','ㅎ':'h'};
+    const KR_ROM_MED = {'ㅏ':'a','ㅐ':'ae','ㅑ':'ya','ㅒ':'yae','ㅓ':'eo','ㅔ':'e','ㅕ':'yeo','ㅖ':'ye','ㅗ':'o','ㅘ':'wa','ㅙ':'wae','ㅚ':'oe','ㅛ':'yo','ㅜ':'u','ㅝ':'wo','ㅞ':'we','ㅟ':'wi','ㅠ':'yu','ㅡ':'eu','ㅢ':'ui','ㅣ':'i'};
+    const KR_ROM_FIN = {'':'','ㄱ':'k','ㄲ':'k','ㄳ':'k','ㄴ':'n','ㄵ':'n','ㄶ':'n','ㄷ':'t','ㄹ':'l','ㄺ':'l','ㄻ':'m','ㄼ':'l','ㄽ':'l','ㄾ':'l','ㄿ':'l','ㅀ':'l','ㅁ':'m','ㅂ':'p','ㅄ':'p','ㅅ':'t','ㅆ':'t','ㅇ':'ng','ㅈ':'t','ㅊ':'t','ㅋ':'k','ㅌ':'t','ㅍ':'p','ㅎ':'t'};
+
+    function romanizeKorean(ch) {
+      const code = ch.charCodeAt(0) - 0xAC00;
+      if (code < 0 || code > 11171) return ch;
+      const fi = code % 28, mid = ((code - fi) / 28) % 21, ini = Math.floor((code - fi) / 28 / 21);
+      return (KR_ROM_INI[KR_INITIALS[ini]] || '') + (KR_ROM_MED[KR_MEDIALS[mid]] || '') + (KR_ROM_FIN[KR_FINALS[fi]] || '');
+    }
+
+    function romanizeChar(ch, script, kana) {
+      if (!romanize) return null;
+      if (script === 'ja' || script === 'ja-kanji') {
+        if (kana) return kana.split('').map(k => ROMAJI[k] || k).join('');
+        const kata = HIRA2KATA[ch] ? String.fromCharCode(ch.charCodeAt(0) + 0x60) : ch;
+        return ROMAJI[ch] || ROMAJI[kata] || null;
+      }
+      if (script === 'zh') return PINYIN_COMMON[ch] || null;
+      if (script === 'ko') return romanizeKorean(ch);
+      return null;
+    }
 
     function isCJK(ch) {
       const c = ch.charCodeAt(0);
@@ -1155,7 +1261,7 @@
           if (!matched) {
             /* Check if text contains any kana nearby → Japanese context */
             const hasKanaNearby = text.split('').some(c => isKana(c));
-            if (hasKanaNearby) {
+            if (hasKanaNearby || cjkForceJa) {
               result.push({ char: ch, kana: null, script: 'ja-kanji' }); /* kanji without reading */
             } else {
               result.push({ char: ch, kana: null, script: 'zh' }); /* Chinese */
@@ -1248,7 +1354,7 @@
         const displayCode = info.ctc ? info.ctc + ' ' + info.morse : info.ruby ? info.ruby + ' ' + info.morse : info.morse;
         parts.forEach(part => {
           for (let e = 0; e < part.length; e++) {
-            seq.push({ type: part[e] === '.' ? 'dot' : 'dash', char: info.display, code: displayCode, charIdx: ci, vel: 3, script: info.script });
+            seq.push({ type: part[e] === '.' ? 'dot' : 'dash', char: info.display, code: displayCode, charIdx: ci, vel: 3, script: info.script, kana: r.kana || null });
           }
         });
         ci++;
@@ -1264,10 +1370,14 @@
       const wrap = document.getElementById('previewWrap');
       const inner = document.getElementById('previewInner');
       inner.innerHTML = '';
-      if (!text.trim()) { wrap.classList.remove('has-content'); return; }
+      if (!text.trim()) { wrap.classList.remove('has-content'); updateCjkToggle(false); return; }
       wrap.classList.add('has-content');
       let needsFullDict = false;
       const resolved = resolveText(text);
+      let hasCJKWithoutKana = false;
+      const hasKana = text.split('').some(c => isKana(c));
+      const hasCJK = text.split('').some(c => isCJK(c));
+      if (hasCJK && !hasKana) hasCJKWithoutKana = true;
 
       resolved.forEach(r => {
         if (/\s/.test(r.char)) {
@@ -1278,9 +1388,21 @@
         if (info.needsDict) needsFullDict = true;
         const col = document.createElement('div'); col.className = 'preview-col';
 
-        /* Character display — with ruby for ja-kanji */
+        /* Character display — with ruby for ja-kanji, romanization for all */
         const charEl = document.createElement('div'); charEl.className = 'preview-char';
-        if (r.script === 'ja-kanji') {
+        const rom = romanizeChar(r.char, r.script, r.kana);
+
+        if (romanize && rom) {
+          charEl.innerHTML = '';
+          const ruby = document.createElement('ruby');
+          ruby.textContent = r.char;
+          const rt = document.createElement('rt');
+          rt.textContent = rom;
+          rt.style.color = 'var(--amber)';
+          rt.style.fontSize = '8px';
+          ruby.appendChild(rt);
+          charEl.appendChild(ruby);
+        } else if (r.script === 'ja-kanji') {
           const ruby = document.createElement('ruby');
           ruby.textContent = r.char;
           const rt = document.createElement('rt');
@@ -1303,9 +1425,20 @@
         inner.appendChild(col);
       });
 
+      updateCjkToggle(hasCJKWithoutKana);
+
       /* show CTC prompt if needed */
       if (needsFullDict && !CTC_FULL) {
         document.getElementById('ctcPrompt').classList.add('show');
+      }
+    }
+
+    function updateCjkToggle(show) {
+      const btn = document.getElementById('cjkToggle');
+      if (btn) {
+        btn.style.display = show ? 'inline-flex' : 'none';
+        btn.textContent = cjkForceJa ? '日' : '中';
+        btn.title = cjkForceJa ? 'Japanese mode (Wabun) — tap for Chinese' : 'Chinese mode (CTC) — tap for Japanese';
       }
     }
 
@@ -1349,7 +1482,9 @@
           if (grp) c.appendChild(grp);
           grp = document.createElement('div'); grp.className = 'char-group-v';
           const lbl = document.createElement('div'); lbl.className = 'char-label-v';
-          lbl.innerHTML = it.char + '<div class="char-morse-v">' + it.code + '</div>';
+          const rom = romanizeChar(it.char, it.script, it.kana);
+          const display = romanize && rom ? rom : it.char;
+          lbl.innerHTML = display + '<div class="char-morse-v">' + it.code + '</div>';
           grp.appendChild(lbl);
           els = document.createElement('div'); els.className = 'char-els-v';
           grp.appendChild(els); cur = it.charIdx;
@@ -1376,7 +1511,7 @@
       sequence.forEach((it, idx) => {
         if (it.type === 'dot' || it.type === 'dash') {
           if (!curChar || it.charIdx !== curChar.charIdx) {
-            curChar = { char: it.char, code: it.code, charIdx: it.charIdx, elements: [] };
+            curChar = { char: it.char, code: it.code, charIdx: it.charIdx, elements: [], script: it.script, kana: it.kana };
             chars.push(curChar);
           }
           const units = it.type === 'dot' ? 1 : 3;
@@ -1406,7 +1541,9 @@
         }
         const row = document.createElement('div'); row.className = 'track-row';
         const hdr = document.createElement('div'); hdr.className = 'track-header';
-        hdr.innerHTML = ch.char + '<span class="track-header-code">' + ch.code + '</span>';
+        const romH = romanizeChar(ch.char, ch.script, ch.kana);
+        const displayH = romanize && romH ? romH : ch.char;
+        hdr.innerHTML = displayH + '<span class="track-header-code">' + ch.code + '</span>';
         row.appendChild(hdr);
         const lane = document.createElement('div'); lane.className = 'track-lane';
         lane.style.width = totalW + 'px';
@@ -1558,17 +1695,42 @@
       };
 
       /* ── IME Composition tracking ── */
+      let kanaBase = '', kanaMixedTail = '';
       inp.addEventListener('compositionstart', () => {
         isComposing = true;
-        lastCompKana = '';
+        kanaBase = ''; kanaMixedTail = '';
       });
       inp.addEventListener('compositionupdate', e => {
-        lastCompKana = e.data || '';
+        const data = e.data || '';
+        if (!data) return;
+        if (data.split('').every(c => isKana(c))) {
+          /* Pure kana phase — keep longest */
+          if (data.length >= kanaBase.length) kanaBase = data;
+        } else if (kanaBase) {
+          /* Mixed phase: extract trailing kana suffix, keep longest seen */
+          let tail = '';
+          for (let k = data.length - 1; k >= 0; k--) {
+            if (isKana(data[k])) tail = data[k] + tail;
+            else break;
+          }
+          if (tail.length > kanaMixedTail.length) kanaMixedTail = tail;
+        }
       });
       inp.addEventListener('compositionend', e => {
         isComposing = false;
         const committed = e.data || '';
-        /* If committed text contains CJK and kana was different, store mapping */
+        /* Compute full reading: baseline + deduplicated mixed tail */
+        let fullReading = kanaBase;
+        if (kanaMixedTail && kanaBase) {
+          /* Find longest suffix of kanaBase that matches a prefix of kanaMixedTail */
+          let overlap = 0;
+          for (let n = Math.min(kanaBase.length, kanaMixedTail.length); n > 0; n--) {
+            if (kanaBase.slice(-n) === kanaMixedTail.slice(0, n)) { overlap = n; break; }
+          }
+          const newKana = kanaMixedTail.slice(overlap);
+          if (newKana) fullReading = kanaBase + newKana;
+        }
+        lastCompKana = fullReading;
         if (lastCompKana && committed !== lastCompKana && committed.split('').some(c => isCJK(c))) {
           imeKanaCache.set(committed, lastCompKana);
         }
@@ -1596,6 +1758,22 @@
         this.textContent = soundMode === 'beep' ? 'BEEP' : 'PERC';
       };
 
+      /* 中↔日 toggle */
+      document.getElementById('cjkToggle').onclick = function () {
+        cjkForceJa = !cjkForceJa;
+        this.classList.toggle('active', cjkForceJa);
+        this.textContent = cjkForceJa ? '日' : '中';
+        this.title = cjkForceJa ? 'Japanese mode (Wabun) — tap for Chinese' : 'Chinese mode (CTC) — tap for Japanese';
+        doEncode();
+      };
+
+      /* Aa romanization toggle */
+      document.getElementById('romanizeBtn').onclick = function () {
+        romanize = !romanize;
+        this.classList.toggle('active', romanize);
+        doEncode();
+      };
+
       /* Info popup */
       document.getElementById('appTitle').onclick = () => {
         document.getElementById('infoOverlay').classList.add('open');
@@ -1612,13 +1790,14 @@
 
       /* ── Cycling placeholder ghost in DAW ── */
       const GHOST_PHRASES = ['type here…', '在此输入…', '在此輸入…', 'ここに入力…', '여기에 입력…'];
-      let ghostIdx = 0, ghostFading = false;
-      const ghostElV = document.getElementById('seqEmptyV');
-      const ghostElH = document.getElementById('seqEmptyH');
+      let ghostIdx = 0;
 
       function setGhostText(txt) {
-        if (ghostElV) { ghostElV.innerHTML = '<div style="opacity:0.15;color:var(--amber);font-size:14px">' + txt + '</div>'; }
-        if (ghostElH) { ghostElH.innerHTML = '<div style="opacity:0.15;color:var(--amber);font-size:14px">' + txt + '</div>'; }
+        /* Look up fresh each tick — renderH rebuilds seqEmptyH */
+        const gV = document.getElementById('seqEmptyV');
+        const gH = document.getElementById('seqEmptyH');
+        if (gV) gV.innerHTML = '<div style="opacity:0.15;color:var(--amber);font-size:14px">' + txt + '</div>';
+        if (gH) gH.innerHTML = '<div style="opacity:0.15;color:var(--amber);font-size:14px">' + txt + '</div>';
       }
       function cycleGhost() {
         setGhostText(GHOST_PHRASES[ghostIdx]);
@@ -1626,8 +1805,8 @@
       }
       function updateGhostVisibility() {
         const hasContent = inp.value.trim().length > 0;
-        if (ghostElV) ghostElV.style.display = hasContent ? 'none' : 'flex';
-        /* seqEmptyH is rebuilt by renderH, so that handles itself */
+        const gV = document.getElementById('seqEmptyV');
+        if (gV) gV.style.display = hasContent ? 'none' : 'flex';
       }
       cycleGhost();
       setInterval(cycleGhost, 3000);
