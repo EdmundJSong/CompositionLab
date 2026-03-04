@@ -7,7 +7,9 @@
   <title>Tonnetz — Composition Lab</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap"
+    rel="stylesheet">
   <style>
     * {
       margin: 0;
@@ -263,16 +265,23 @@
       border: 1px solid #333;
       border-radius: 3px;
       color: #d4912a;
-      font-family: inherit;
+      font-family: 'JetBrains Mono', monospace;
       font-size: 9px;
       text-align: center;
       padding: 1px 2px;
       outline: none;
       -moz-appearance: textfield;
     }
+
     .val-input::-webkit-inner-spin-button,
-    .val-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-    .val-input:focus { border-color: #d4912a; }
+    .val-input::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    .val-input:focus {
+      border-color: #d4912a;
+    }
 
     /* knob component */
     .knob-wrap {
@@ -446,7 +455,7 @@
       color: #d4912a;
       border-radius: 12px;
       font-size: 15px;
-      font-family: "SF Mono", "Fira Code", "Courier New", monospace;
+      font-family: 'JetBrains Mono', monospace;
       font-weight: bold;
       letter-spacing: 0.05em;
       min-width: 32px;
@@ -723,16 +732,27 @@
       }
 
       body.sidebar-layout .sidebar .sb-toolbar {
-        display: flex; flex-wrap: wrap; gap: 4px; justify-content: center;
-        background: #141414; padding: 6px; border-radius: 8px;
-        border: 1px solid rgba(255,255,255,0.03);
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        justify-content: center;
+        background: #141414;
+        padding: 6px;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.03);
       }
+
       body.sidebar-layout .sidebar .sb-controls {
-        display: flex; gap: 8px; align-items: flex-start; padding: 4px 0;
+        display: flex;
+        gap: 8px;
+        align-items: flex-start;
+        padding: 4px 0;
       }
+
       body.sidebar-layout .sidebar .sb-controls .knob-wrap,
       body.sidebar-layout .sidebar .sb-controls .sld-wrap {
-        flex: 1; min-width: 0;
+        flex: 1;
+        min-width: 0;
       }
 
       body.sidebar-layout .drow,
@@ -1120,7 +1140,7 @@
       sel.style.cssText = "border:1px solid #333;border-radius:5px;padding:4px 6px;background:#1e1e1e;color:#c8c0b4;font-family:inherit;font-size:12px;cursor:pointer;outline:none;";
       P_DISP.forEach((n, i) => { const o = document.createElement("option"); o.value = i; o.textContent = n; sel.appendChild(o); });
       sel.value = tc;
-      sel.onchange = function() { setTc(parseInt(this.value)); };
+      sel.onchange = function () { setTc(parseInt(this.value)); };
       if (!pc) tb.appendChild(sel);
 
       sbBtn("#", "Pitch class", pc ? "on" : "", () => { togglePc(); buildSidebar(); });
@@ -1132,8 +1152,8 @@
       /* ── Dynamic controls: size + tilt side by side ── */
       if (mode === "type") {
         if (typeCh) {
-          addLabeledSlider(ct, "size", "0.15", "1.8", "0.02", typeSc, function(v) { typeSc = v; update(); });
-          addKnob(ct, "tilt", typeRot, function(v) { typeRot = v; update(); });
+          addLabeledSlider(ct, "size", "0.15", "1.8", "0.02", typeSc, function (v) { typeSc = v; update(); });
+          addKnob(ct, "tilt", typeRot, function (v) { typeRot = v; update(); });
         }
       } else {
         if (dPaths.length > 0) {
@@ -1146,8 +1166,8 @@
           bLock.onclick = () => { locked = !locked; cv.style.cursor = mode === "draw" && !locked ? "crosshair" : "grab"; buildRow2(); buildSheetMode(); buildSidebar(); update(); };
           ct.appendChild(bLock);
           if (locked) {
-            addLabeledSlider(ct, "size", "0.3", "2.5", "0.02", drawSc, function(v) { drawSc = v; update(); });
-            addKnob(ct, "tilt", drawRot, function(v) { drawRot = v; update(); });
+            addLabeledSlider(ct, "size", "0.3", "2.5", "0.02", drawSc, function (v) { drawSc = v; update(); });
+            addKnob(ct, "tilt", drawRot, function (v) { drawRot = v; update(); });
           }
         }
       }
