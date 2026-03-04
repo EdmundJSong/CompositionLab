@@ -257,6 +257,23 @@
       text-transform: lowercase
     }
 
+    .val-input {
+      width: 38px;
+      background: transparent;
+      border: 1px solid #333;
+      border-radius: 3px;
+      color: #d4912a;
+      font-family: inherit;
+      font-size: 9px;
+      text-align: center;
+      padding: 1px 2px;
+      outline: none;
+      -moz-appearance: textfield;
+    }
+    .val-input::-webkit-inner-spin-button,
+    .val-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    .val-input:focus { border-color: #d4912a; }
+
     /* knob component */
     .knob-wrap {
       display: flex;
@@ -955,8 +972,8 @@
     let dPaths = [], curPath = null, locked = false, drawPos = { x: 400, y: 300 }, drawSc = 1.0, drawRot = 0;
     let aN = new Set(), playing = false, toneStarted = false, synth = null;
     let dragging = false, dragStart = null;
-    let showRot = false, showSc = false, showSkew = false;
-    let rotTm, scTm, skTm;
+    let showSkew = false;
+    let skTm;
     let activePitch = null;
     let isComposing = false;
     let sheetOpen = false;
@@ -1115,8 +1132,8 @@
       /* ── Dynamic controls: size + tilt side by side ── */
       if (mode === "type") {
         if (typeCh) {
-          addLabeledSlider(ct, "size", "0.15", "1.8", "0.02", typeSc, function(v) { typeSc = v; showSc = true; clearTimeout(scTm); scTm = setTimeout(() => { showSc = false; render(); }, 800); update(); });
-          addKnob(ct, "tilt", typeRot, function(v) { typeRot = v; showRot = true; clearTimeout(rotTm); rotTm = setTimeout(() => { showRot = false; render(); }, 800); update(); });
+          addLabeledSlider(ct, "size", "0.15", "1.8", "0.02", typeSc, function(v) { typeSc = v; update(); });
+          addKnob(ct, "tilt", typeRot, function(v) { typeRot = v; update(); });
         }
       } else {
         if (dPaths.length > 0) {
@@ -1129,8 +1146,8 @@
           bLock.onclick = () => { locked = !locked; cv.style.cursor = mode === "draw" && !locked ? "crosshair" : "grab"; buildRow2(); buildSheetMode(); buildSidebar(); update(); };
           ct.appendChild(bLock);
           if (locked) {
-            addLabeledSlider(ct, "size", "0.3", "2.5", "0.02", drawSc, function(v) { drawSc = v; showSc = true; clearTimeout(scTm); scTm = setTimeout(() => { showSc = false; render(); }, 800); update(); });
-            addKnob(ct, "tilt", drawRot, function(v) { drawRot = v; showRot = true; clearTimeout(rotTm); rotTm = setTimeout(() => { showRot = false; render(); }, 800); update(); });
+            addLabeledSlider(ct, "size", "0.3", "2.5", "0.02", drawSc, function(v) { drawSc = v; update(); });
+            addKnob(ct, "tilt", drawRot, function(v) { drawRot = v; update(); });
           }
         }
       }
@@ -1315,8 +1332,6 @@
       ctx.save(); ctx.textAlign = "center"; ctx.textBaseline = "middle";
       ctx.font = '15px "SF Mono","Fira Code","Courier New",monospace'; ctx.fillStyle = AMBER;
       let iy = H / 2;
-      if (showRot) { ctx.globalAlpha = 0.8; ctx.fillText(Math.round(cRot() * 180 / Math.PI) + "\u00b0", W / 2, iy); iy += 22; }
-      if (showSc) { ctx.globalAlpha = 0.8; ctx.fillText(Math.round(cSc() * 100) + "%", W / 2, iy); iy += 22; }
       if (showSkew) { ctx.globalAlpha = 0.8; ctx.fillText("skew " + Math.round(skew * 100) / 100, W / 2, iy); }
       ctx.restore();
 
@@ -1499,8 +1514,8 @@
 
       if (mode === "type") {
         if (typeCh) {
-          addLabeledSlider(r2, "size", "0.15", "1.8", "0.02", typeSc, function (v) { typeSc = v; showSc = true; clearTimeout(scTm); scTm = setTimeout(() => { showSc = false; render(); }, 800); update(); });
-          addKnob(r2, "tilt", typeRot, function (v) { typeRot = v; showRot = true; clearTimeout(rotTm); rotTm = setTimeout(() => { showRot = false; render(); }, 800); update(); });
+          addLabeledSlider(r2, "size", "0.15", "1.8", "0.02", typeSc, function (v) { typeSc = v; update(); });
+          addKnob(r2, "tilt", typeRot, function (v) { typeRot = v; update(); });
         }
       } else {
         if (dPaths.length > 0) {
@@ -1510,8 +1525,8 @@
           bLock.onclick = () => { locked = !locked; cv.style.cursor = mode === "draw" && !locked ? "crosshair" : "grab"; buildRow2(); buildSheetMode(); update(); };
           r2.appendChild(bLock);
           if (locked) {
-            addLabeledSlider(r2, "size", "0.3", "2.5", "0.02", drawSc, function (v) { drawSc = v; showSc = true; clearTimeout(scTm); scTm = setTimeout(() => { showSc = false; render(); }, 800); update(); });
-            addKnob(r2, "tilt", drawRot, function (v) { drawRot = v; showRot = true; clearTimeout(rotTm); rotTm = setTimeout(() => { showRot = false; render(); }, 800); update(); });
+            addLabeledSlider(r2, "size", "0.3", "2.5", "0.02", drawSc, function (v) { drawSc = v; update(); });
+            addKnob(r2, "tilt", drawRot, function (v) { drawRot = v; update(); });
           }
         }
       }
@@ -1519,27 +1534,36 @@
 
     function addKnob(parent, label, val, cb) {
       const w = document.createElement("div"); w.className = "knob-wrap";
+
+      /* Editable degree input */
+      const vi = document.createElement("input"); vi.type = "number"; vi.className = "val-input"; vi.id = "tiltValInput";
+      vi.value = Math.round(val * 180 / Math.PI);
+      vi.onchange = function () {
+        let deg = parseInt(this.value) || 0;
+        deg = Math.max(-180, Math.min(180, deg));
+        this.value = deg;
+        const rad = deg * Math.PI / 180;
+        ind.style.transform = `translate(-50%, -50%) rotate(${rad}rad) translateY(-8px)`;
+        cb(rad);
+      };
+      w.appendChild(vi);
+
       const k = document.createElement("div"); k.className = "knob";
       const ind = document.createElement("div"); ind.className = "knob-indicator";
-
-      // Setup initial rotation
       ind.style.transform = `translate(-50%, -50%) rotate(${val}rad) translateY(-8px)`;
       k.appendChild(ind);
 
-      let isDragging = false;
-      let startY = 0;
-      let startVal = val;
+      let isDragging = false, startY = 0, startVal = val;
 
       const onMove = (e) => {
         if (!isDragging) return;
         const cy = e.touches ? e.touches[0].clientY : e.clientY;
         const deltaY = startY - cy;
-        let newVal = startVal + (deltaY * 0.02); // sensitivity
-        // Wrap between -PI and PI
+        let newVal = startVal + (deltaY * 0.02);
         while (newVal > Math.PI) newVal -= Math.PI * 2;
         while (newVal < -Math.PI) newVal += Math.PI * 2;
-
         ind.style.transform = `translate(-50%, -50%) rotate(${newVal}rad) translateY(-8px)`;
+        vi.value = Math.round(newVal * 180 / Math.PI);
         cb(newVal);
       };
 
@@ -1555,7 +1579,6 @@
         e.preventDefault();
         isDragging = true;
         startY = e.touches ? e.touches[0].clientY : e.clientY;
-        // current value could have changed externally, so we need to track it via getter or trust callback flow
         startVal = mode === "type" ? typeRot : drawRot;
         document.addEventListener("mousemove", onMove);
         document.addEventListener("touchmove", onMove, { passive: false });
@@ -1572,8 +1595,27 @@
 
     function addLabeledSlider(parent, label, min, max, step, val, cb) {
       const w = document.createElement("div"); w.className = "sld-wrap";
+
+      /* Editable percentage input */
+      const vi = document.createElement("input"); vi.type = "number"; vi.className = "val-input"; vi.id = "sizeValInput";
+      vi.value = Math.round(val * 100);
+      vi.onchange = function () {
+        let pct = parseInt(this.value) || 100;
+        const lo = Math.round(parseFloat(min) * 100), hi = Math.round(parseFloat(max) * 100);
+        pct = Math.max(lo, Math.min(hi, pct));
+        this.value = pct;
+        const raw = pct / 100;
+        s.value = raw;
+        cb(raw);
+      };
+      w.appendChild(vi);
+
       const s = document.createElement("input"); s.type = "range"; s.min = min; s.max = max; s.step = step; s.value = val;
-      s.oninput = function () { cb(parseFloat(this.value)); };
+      s.oninput = function () {
+        const v = parseFloat(this.value);
+        vi.value = Math.round(v * 100);
+        cb(v);
+      };
       const l = document.createElement("span"); l.className = "sld-lbl"; l.textContent = label;
       w.append(s, l); parent.appendChild(w);
     }
@@ -1675,14 +1717,16 @@
           let newSc = pinchStartSc * scaleRatio;
           if (mode === "type") { newSc = Math.max(0.15, Math.min(1.8, newSc)); typeSc = newSc; }
           else { newSc = Math.max(0.3, Math.min(2.5, newSc)); drawSc = newSc; }
-          showSc = true; clearTimeout(scTm); scTm = setTimeout(() => { showSc = false; render(); }, 800);
+          const sizeInp = document.getElementById('sizeValInput');
+          if (sizeInp) sizeInp.value = Math.round(newSc * 100);
           /* rotate */
           const angle = touchAngle(ts[0], ts[1]);
           let newRot = pinchStartRot + (angle - pinchStartAngle);
           while (newRot > Math.PI) newRot -= Math.PI * 2;
           while (newRot < -Math.PI) newRot += Math.PI * 2;
           if (mode === "type") typeRot = newRot; else drawRot = newRot;
-          showRot = true; clearTimeout(rotTm); rotTm = setTimeout(() => { showRot = false; render(); }, 800);
+          const tiltInp = document.getElementById('tiltValInput');
+          if (tiltInp) tiltInp.value = Math.round(newRot * 180 / Math.PI);
           update();
         }
       } else if (ts.length === 1 && pinchStartDist === null) {
