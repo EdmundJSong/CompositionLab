@@ -984,14 +984,14 @@
     canvasInput.addEventListener("compositionend", e => {
       isComposing = false;
       const v = e.target.value;
-      if (v.length > 0) { typeCh = v.slice(-1); canvasInput.value = typeCh; typePos = { x: W / 2, y: H / 2 }; toneRowOrder = null; update(); }
-      else { typeCh = ""; canvasInput.value = ""; toneRowOrder = null; update(); }
+      if (v.length > 0) { typeCh = v.slice(-1); canvasInput.value = typeCh; typePos = { x: W / 2, y: H / 2 }; toneRowOrder = null; buildRow2(); buildSidebar(); update(); }
+      else { typeCh = ""; canvasInput.value = ""; toneRowOrder = null; buildRow2(); buildSidebar(); update(); }
     });
     canvasInput.addEventListener("input", e => {
       if (!isComposing) {
         const v = e.target.value;
-        if (v.length > 0) { typeCh = v.slice(-1); canvasInput.value = typeCh; typePos = { x: W / 2, y: H / 2 }; toneRowOrder = null; update(); }
-        else { typeCh = ""; canvasInput.value = ""; toneRowOrder = null; update(); }
+        if (v.length > 0) { typeCh = v.slice(-1); canvasInput.value = typeCh; typePos = { x: W / 2, y: H / 2 }; toneRowOrder = null; buildRow2(); buildSidebar(); update(); }
+        else { typeCh = ""; canvasInput.value = ""; toneRowOrder = null; buildRow2(); buildSidebar(); update(); }
       }
     });
     function focusCanvasInput() {
@@ -1114,20 +1114,24 @@
 
       /* ── Dynamic controls: size + tilt side by side ── */
       if (mode === "type") {
-        addLabeledSlider(ct, "size", "0.15", "1.8", "0.02", typeSc, function(v) { typeSc = v; showSc = true; clearTimeout(scTm); scTm = setTimeout(() => { showSc = false; render(); }, 800); update(); });
-        addKnob(ct, "tilt", typeRot, function(v) { typeRot = v; showRot = true; clearTimeout(rotTm); rotTm = setTimeout(() => { showRot = false; render(); }, 800); update(); });
+        if (typeCh) {
+          addLabeledSlider(ct, "size", "0.15", "1.8", "0.02", typeSc, function(v) { typeSc = v; showSc = true; clearTimeout(scTm); scTm = setTimeout(() => { showSc = false; render(); }, 800); update(); });
+          addKnob(ct, "tilt", typeRot, function(v) { typeRot = v; showRot = true; clearTimeout(rotTm); rotTm = setTimeout(() => { showRot = false; render(); }, 800); update(); });
+        }
       } else {
-        const bClr = document.createElement("button"); bClr.textContent = "\u2715"; bClr.title = "Clear";
-        bClr.style.cssText = "border:none;border-radius:5px;padding:6px 10px;background:#1e1e1e;color:#c8c0b4;cursor:pointer;font-family:inherit;";
-        bClr.onclick = clearDraw; ct.appendChild(bClr);
-        const bLock = document.createElement("button"); bLock.textContent = locked ? "🔒" : "🔓"; bLock.title = locked ? "Unlock" : "Lock";
-        bLock.className = locked ? "on" : "";
-        bLock.style.cssText = "border:none;border-radius:5px;padding:6px 10px;background:#1e1e1e;color:#c8c0b4;cursor:pointer;font-family:inherit;";
-        bLock.onclick = () => { locked = !locked; cv.style.cursor = mode === "draw" && !locked ? "crosshair" : "grab"; buildRow2(); buildSheetMode(); buildSidebar(); update(); };
-        ct.appendChild(bLock);
-        if (locked) {
-          addLabeledSlider(ct, "size", "0.3", "2.5", "0.02", drawSc, function(v) { drawSc = v; showSc = true; clearTimeout(scTm); scTm = setTimeout(() => { showSc = false; render(); }, 800); update(); });
-          addKnob(ct, "tilt", drawRot, function(v) { drawRot = v; showRot = true; clearTimeout(rotTm); rotTm = setTimeout(() => { showRot = false; render(); }, 800); update(); });
+        if (dPaths.length > 0) {
+          const bClr = document.createElement("button"); bClr.textContent = "\u2715"; bClr.title = "Clear";
+          bClr.style.cssText = "border:none;border-radius:5px;padding:6px 10px;background:#1e1e1e;color:#c8c0b4;cursor:pointer;font-family:inherit;";
+          bClr.onclick = clearDraw; ct.appendChild(bClr);
+          const bLock = document.createElement("button"); bLock.textContent = locked ? "🔒" : "🔓"; bLock.title = locked ? "Unlock" : "Lock";
+          bLock.className = locked ? "on" : "";
+          bLock.style.cssText = "border:none;border-radius:5px;padding:6px 10px;background:#1e1e1e;color:#c8c0b4;cursor:pointer;font-family:inherit;";
+          bLock.onclick = () => { locked = !locked; cv.style.cursor = mode === "draw" && !locked ? "crosshair" : "grab"; buildRow2(); buildSheetMode(); buildSidebar(); update(); };
+          ct.appendChild(bLock);
+          if (locked) {
+            addLabeledSlider(ct, "size", "0.3", "2.5", "0.02", drawSc, function(v) { drawSc = v; showSc = true; clearTimeout(scTm); scTm = setTimeout(() => { showSc = false; render(); }, 800); update(); });
+            addKnob(ct, "tilt", drawRot, function(v) { drawRot = v; showRot = true; clearTimeout(rotTm); rotTm = setTimeout(() => { showRot = false; render(); }, 800); update(); });
+          }
         }
       }
     }
@@ -1494,17 +1498,21 @@
       r2.className = "drow2 panel-anim"; // smooth entrance
 
       if (mode === "type") {
-        addLabeledSlider(r2, "size", "0.15", "1.8", "0.02", typeSc, function (v) { typeSc = v; showSc = true; clearTimeout(scTm); scTm = setTimeout(() => { showSc = false; render(); }, 800); update(); });
-        addKnob(r2, "tilt", typeRot, function (v) { typeRot = v; showRot = true; clearTimeout(rotTm); rotTm = setTimeout(() => { showRot = false; render(); }, 800); update(); });
+        if (typeCh) {
+          addLabeledSlider(r2, "size", "0.15", "1.8", "0.02", typeSc, function (v) { typeSc = v; showSc = true; clearTimeout(scTm); scTm = setTimeout(() => { showSc = false; render(); }, 800); update(); });
+          addKnob(r2, "tilt", typeRot, function (v) { typeRot = v; showRot = true; clearTimeout(rotTm); rotTm = setTimeout(() => { showRot = false; render(); }, 800); update(); });
+        }
       } else {
-        const bClr = document.createElement("button"); bClr.innerHTML = svgClear; bClr.onclick = () => { clearDraw(); };
-        r2.appendChild(bClr);
-        const bLock = document.createElement("button"); bLock.textContent = locked ? "🔒" : "🔓"; bLock.className = locked ? "on" : "";
-        bLock.onclick = () => { locked = !locked; cv.style.cursor = mode === "draw" && !locked ? "crosshair" : "grab"; buildRow2(); buildSheetMode(); update(); };
-        r2.appendChild(bLock);
-        if (locked) {
-          addLabeledSlider(r2, "size", "0.3", "2.5", "0.02", drawSc, function (v) { drawSc = v; showSc = true; clearTimeout(scTm); scTm = setTimeout(() => { showSc = false; render(); }, 800); update(); });
-          addKnob(r2, "tilt", drawRot, function (v) { drawRot = v; showRot = true; clearTimeout(rotTm); rotTm = setTimeout(() => { showRot = false; render(); }, 800); update(); });
+        if (dPaths.length > 0) {
+          const bClr = document.createElement("button"); bClr.innerHTML = svgClear; bClr.onclick = () => { clearDraw(); };
+          r2.appendChild(bClr);
+          const bLock = document.createElement("button"); bLock.textContent = locked ? "🔒" : "🔓"; bLock.className = locked ? "on" : "";
+          bLock.onclick = () => { locked = !locked; cv.style.cursor = mode === "draw" && !locked ? "crosshair" : "grab"; buildRow2(); buildSheetMode(); update(); };
+          r2.appendChild(bLock);
+          if (locked) {
+            addLabeledSlider(r2, "size", "0.3", "2.5", "0.02", drawSc, function (v) { drawSc = v; showSc = true; clearTimeout(scTm); scTm = setTimeout(() => { showSc = false; render(); }, 800); update(); });
+            addKnob(r2, "tilt", drawRot, function (v) { drawRot = v; showRot = true; clearTimeout(rotTm); rotTm = setTimeout(() => { showRot = false; render(); }, 800); update(); });
+          }
         }
       }
     }
@@ -1578,11 +1586,13 @@
         const hint = document.createElement("span"); hint.style.cssText = "color:#555;font-size:12px;";
         hint.textContent = "Tap grid to type"; el.appendChild(hint);
       } else {
-        const bClr = document.createElement("button"); bClr.textContent = "\u2715"; bClr.onclick = () => { dPaths = []; curPath = null; locked = false; drawSc = 1.0; drawRot = 0; drawPos = { x: W / 2, y: H / 2 }; toneRowOrder = null; buildRow2(); buildSheetMode(); update(); };
-        el.appendChild(bClr);
-        const bLock = document.createElement("button"); bLock.textContent = locked ? "🔒" : "🔓"; bLock.className = locked ? "on" : "";
-        bLock.onclick = () => { locked = !locked; cv.style.cursor = mode === "draw" && !locked ? "crosshair" : "grab"; buildRow2(); buildSheetMode(); update(); };
-        el.appendChild(bLock);
+        if (dPaths.length > 0) {
+          const bClr = document.createElement("button"); bClr.textContent = "\u2715"; bClr.onclick = () => { dPaths = []; curPath = null; locked = false; drawSc = 1.0; drawRot = 0; drawPos = { x: W / 2, y: H / 2 }; toneRowOrder = null; buildRow2(); buildSheetMode(); update(); };
+          el.appendChild(bClr);
+          const bLock = document.createElement("button"); bLock.textContent = locked ? "🔒" : "🔓"; bLock.className = locked ? "on" : "";
+          bLock.onclick = () => { locked = !locked; cv.style.cursor = mode === "draw" && !locked ? "crosshair" : "grab"; buildRow2(); buildSheetMode(); update(); };
+          el.appendChild(bLock);
+        }
         /* size/tilt handled by two-finger pinch/rotate on canvas */
       }
     }
@@ -1629,7 +1639,7 @@
     function pUp() {
       if (canvasDisabled) return;
       if (mode === "type" && !dragMoved) focusCanvasInput();
-      if (mode === "draw" && !locked && curPath && curPath.length > 1) { dPaths.push(curPath); }
+      if (mode === "draw" && !locked && curPath && curPath.length > 1) { dPaths.push(curPath); buildRow2(); buildSheetMode(); buildSidebar(); }
       curPath = null; dragging = false; dragStart = null; update();
     }
 
@@ -1657,21 +1667,24 @@
       touchMoved = true;
       const ts = getTouches(e);
       if (ts.length === 2 && pinchStartDist !== null) {
-        /* pinch = scale */
-        const dist = touchDist(ts[0], ts[1]);
-        const scaleRatio = dist / pinchStartDist;
-        let newSc = pinchStartSc * scaleRatio;
-        if (mode === "type") { newSc = Math.max(0.15, Math.min(1.8, newSc)); typeSc = newSc; }
-        else { newSc = Math.max(0.3, Math.min(2.5, newSc)); drawSc = newSc; }
-        showSc = true; clearTimeout(scTm); scTm = setTimeout(() => { showSc = false; render(); }, 800);
-        /* rotate */
-        const angle = touchAngle(ts[0], ts[1]);
-        let newRot = pinchStartRot + (angle - pinchStartAngle);
-        while (newRot > Math.PI) newRot -= Math.PI * 2;
-        while (newRot < -Math.PI) newRot += Math.PI * 2;
-        if (mode === "type") typeRot = newRot; else drawRot = newRot;
-        showRot = true; clearTimeout(rotTm); rotTm = setTimeout(() => { showRot = false; render(); }, 800);
-        update();
+        /* pinch = scale — only if content exists */
+        const hasContent = (mode === "type" && typeCh) || (mode === "draw" && dPaths.length > 0);
+        if (hasContent) {
+          const dist = touchDist(ts[0], ts[1]);
+          const scaleRatio = dist / pinchStartDist;
+          let newSc = pinchStartSc * scaleRatio;
+          if (mode === "type") { newSc = Math.max(0.15, Math.min(1.8, newSc)); typeSc = newSc; }
+          else { newSc = Math.max(0.3, Math.min(2.5, newSc)); drawSc = newSc; }
+          showSc = true; clearTimeout(scTm); scTm = setTimeout(() => { showSc = false; render(); }, 800);
+          /* rotate */
+          const angle = touchAngle(ts[0], ts[1]);
+          let newRot = pinchStartRot + (angle - pinchStartAngle);
+          while (newRot > Math.PI) newRot -= Math.PI * 2;
+          while (newRot < -Math.PI) newRot += Math.PI * 2;
+          if (mode === "type") typeRot = newRot; else drawRot = newRot;
+          showRot = true; clearTimeout(rotTm); rotTm = setTimeout(() => { showRot = false; render(); }, 800);
+          update();
+        }
       } else if (ts.length === 1 && pinchStartDist === null) {
         const p = ts[0];
         if (mode === "draw" && !locked && curPath) { curPath.push({ x: wrap(p.x, 0, W), y: wrap(p.y, 0, H) }); render(); }
@@ -1683,7 +1696,7 @@
       if (e.touches.length < 2) { pinchStartDist = null; pinchStartAngle = null; }
       if (e.touches.length === 0) {
         if (mode === "type" && !touchMoved) focusCanvasInput();
-        if (mode === "draw" && !locked && curPath && curPath.length > 1) { dPaths.push(curPath); }
+        if (mode === "draw" && !locked && curPath && curPath.length > 1) { dPaths.push(curPath); buildRow2(); buildSheetMode(); buildSidebar(); }
         curPath = null; dragging = false; dragStart = null;
         pinchStartDist = null; pinchStartAngle = null;
         update();
