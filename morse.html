@@ -126,6 +126,11 @@
       font-size: 15px;
       outline: none;
       transition: border-color 0.2s;
+      resize: none;
+      line-height: 1.5;
+      min-height: 38px;
+      max-height: 100px;
+      overflow-y: auto;
     }
 
     .text-input:focus {
@@ -135,6 +140,55 @@
     .text-input::placeholder {
       color: var(--text3);
     }
+
+    /* ═══ STACKED PREVIEW ═══ */
+    .preview-wrap {
+      padding: 6px 12px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      flex-shrink: 0;
+      overflow-x: auto;
+      overflow-y: hidden;
+      display: none;
+    }
+    .preview-wrap.has-content { display: block; }
+    .preview-inner {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 2px 10px;
+    }
+    .preview-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-width: 20px;
+    }
+    .preview-char {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.3;
+    }
+    .preview-morse {
+      font-size: 9px;
+      color: var(--text3);
+      line-height: 1.3;
+      white-space: nowrap;
+    }
+    .preview-space {
+      width: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .preview-space::after {
+      content: '';
+      width: 8px;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ═══ LANG INDICATORS ═══ */
 
     .lang-tabs {
       display: flex;
@@ -159,6 +213,58 @@
       background: var(--amber-dim);
       border-color: var(--amber);
       color: var(--amber);
+    }
+
+    .lang-tab.detected {
+      background: rgba(212,145,42,0.08);
+      border-color: rgba(212,145,42,0.3);
+      color: rgba(212,145,42,0.7);
+    }
+
+    /* ═══ INFO POPUP ═══ */
+    .info-overlay {
+      position: fixed; inset: 0; z-index: 100;
+      background: rgba(0,0,0,0.6);
+      display: none; align-items: center; justify-content: center;
+    }
+    .info-overlay.open { display: flex; }
+    .info-card {
+      background: #161616; border: 1px solid #2a2a2a;
+      border-radius: 12px; padding: 24px; max-width: 380px;
+      width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+    .info-card h3 { font-size: 14px; font-weight: 600; color: var(--amber); letter-spacing: 1px; margin-bottom: 16px; }
+    .info-entry { margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.04); }
+    .info-entry:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+    .info-entry-label { font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 2px; }
+    .info-entry-desc { font-size: 10px; color: var(--text3); line-height: 1.5; }
+    .info-close {
+      margin-top: 16px; width: 100%; padding: 8px;
+      border: 1px solid var(--border); border-radius: 6px;
+      background: transparent; color: var(--text2);
+      font-family: inherit; font-size: 11px; cursor: pointer; transition: all 0.15s;
+    }
+    .info-close:hover { border-color: var(--amber); color: var(--amber); }
+
+    /* ═══ CTC PROMPT ═══ */
+    .ctc-prompt {
+      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+      z-index: 50; background: #1a1a1a; border: 1px solid var(--amber);
+      border-radius: 10px; padding: 12px 16px;
+      display: none; align-items: center; gap: 12px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.5); max-width: 360px;
+    }
+    .ctc-prompt.show { display: flex; }
+    .ctc-prompt-text { font-size: 11px; color: var(--text2); line-height: 1.4; }
+    .ctc-prompt-btn {
+      padding: 6px 14px; border: none; border-radius: 5px;
+      background: var(--amber); color: #000; font-weight: 600;
+      font-size: 11px; cursor: pointer; font-family: inherit; white-space: nowrap;
+    }
+    .ctc-prompt-dismiss {
+      padding: 6px 10px; border: 1px solid var(--border); border-radius: 5px;
+      background: transparent; color: var(--text3); font-size: 11px;
+      cursor: pointer; font-family: inherit; white-space: nowrap;
     }
 
     .encode-btn {
@@ -763,7 +869,7 @@
 
   <div class="top-bar">
     <button class="back-btn" onclick="window.location.href='index.html'" title="Home">‹</button>
-    <div class="app-title">MORSE<span>SEQ</span></div>
+    <div class="app-title" id="appTitle" style="cursor:pointer" title="Encoding info">MORSE<span>SEQ</span></div>
     <button class="layout-toggle" id="layoutToggle" title="Toggle mobile / desktop">
       <svg id="layoutIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
         stroke-linecap="round">
@@ -774,14 +880,50 @@
   </div>
 
   <div class="input-row">
-    <input type="text" class="text-input" id="textInput" placeholder="Type a phrase…" autocomplete="off"
-      spellcheck="false">
-    <div class="lang-tabs">
+    <textarea class="text-input" id="textInput" placeholder="Type a phrase…" autocomplete="off"
+      spellcheck="false" rows="1"></textarea>
+    <div class="lang-tabs" id="langTabs">
       <button class="lang-tab active" data-lang="en">EN</button>
-      <button class="lang-tab" data-lang="zh" disabled>中</button>
-      <button class="lang-tab" data-lang="ja" disabled>あ</button>
-      <button class="lang-tab" data-lang="ko" disabled>한</button>
+      <button class="lang-tab" data-lang="zh">中</button>
+      <button class="lang-tab" data-lang="ja">あ</button>
+      <button class="lang-tab" data-lang="ko">한</button>
     </div>
+  </div>
+
+  <!-- Stacked preview -->
+  <div class="preview-wrap" id="previewWrap">
+    <div class="preview-inner" id="previewInner"></div>
+  </div>
+
+  <!-- Info popup -->
+  <div class="info-overlay" id="infoOverlay" onclick="if(event.target===this)this.classList.remove('open')">
+    <div class="info-card">
+      <h3>ENCODING SYSTEMS</h3>
+      <div class="info-entry">
+        <div class="info-entry-label">Latin / Numbers</div>
+        <div class="info-entry-desc">International Morse Code (ITU-R M.1677)</div>
+      </div>
+      <div class="info-entry">
+        <div class="info-entry-label">日本語 — Wabun Code</div>
+        <div class="info-entry-desc">和文モールス符号 — Japanese kana-to-morse mapping, used since 1854</div>
+      </div>
+      <div class="info-entry">
+        <div class="info-entry-label">한국어 — SKATS</div>
+        <div class="info-entry-desc">Standard Korean Alphabet Transliteration System — jamo decomposition to morse</div>
+      </div>
+      <div class="info-entry">
+        <div class="info-entry-label">中文 — CTC</div>
+        <div class="info-entry-desc">中文電碼 / 中文电码 — Chinese Telegraph Code (1983 Standard). Each character maps to a 4-digit code, then encoded as ITU morse per digit.</div>
+      </div>
+      <button class="info-close" onclick="document.getElementById('infoOverlay').classList.remove('open')">CLOSE</button>
+    </div>
+  </div>
+
+  <!-- CTC download prompt -->
+  <div class="ctc-prompt" id="ctcPrompt">
+    <div class="ctc-prompt-text">Extended Chinese dictionary needed for uncommon characters (~180KB)</div>
+    <button class="ctc-prompt-btn" id="ctcDownloadBtn">DOWNLOAD</button>
+    <button class="ctc-prompt-dismiss" id="ctcDismissBtn">✕</button>
   </div>
 
   <div class="ctrl-bar">
@@ -859,19 +1001,153 @@
   </div>
 
   <script>
-    /* ═══ MORSE ═══ */
+    /* ═══ ITU MORSE ═══ */
     const MORSE = {
-      'A': '.-', 'B': '-...', 'C': '-.-.', 'D': '-..', 'E': '.', 'F': '..-.', 'G': '--.',
-      'H': '....', 'I': '..', 'J': '.---', 'K': '-.-', 'L': '.-..', 'M': '--', 'N': '-.',
-      'O': '---', 'P': '.--.', 'Q': '--.-', 'R': '.-.', 'S': '...', 'T': '-', 'U': '..-',
-      'V': '...-', 'W': '.--', 'X': '-..-', 'Y': '-.--', 'Z': '--..',
-      '0': '-----', '1': '.----', '2': '..---', '3': '...--', '4': '....-', '5': '.....',
-      '6': '-....', '7': '--...', '8': '---..', '9': '----.',
-      '.': '.-.-.-', ',': '--..--', '?': '..--..', '!': '-.-.--', '/': '-..-.',
-      '(': '-.--.', ')': '-.--.-', '&': '.-...', ':': '---...', ';': '-.-.-.',
-      '=': '-...-', '+': '.-.-.', '-': '-....-', '_': '..--.-', '"': '.-..-.',
-      '$': '...-..-', '@': '.--.-.', "'": '.----.'
+      'A':'.-','B':'-...','C':'-.-.','D':'-..','E':'.','F':'..-.','G':'--.','H':'....',
+      'I':'..','J':'.---','K':'-.-','L':'.-..','M':'--','N':'-.','O':'---','P':'.--.',
+      'Q':'--.-','R':'.-.','S':'...','T':'-','U':'..-','V':'...-','W':'.--','X':'-..-',
+      'Y':'-.--','Z':'--..',
+      '0':'-----','1':'.----','2':'..---','3':'...--','4':'....-','5':'.....',
+      '6':'-....','7':'--...','8':'---..','9':'----.',
+      '.':'.-.-.-',',':'--..--','?':'..--..','!':'-.-.--','/':'-..-.',
+      '(': '-.--.',')'  :'-.--.-','&':'.-...', ':':'---...',';':'-.-.-.',
+      '=':'-...-','+':'.-.-.', '-':'-....-','_':'..--.-','"':'.-..-.',
+      '$':'...-..-','@':'.--.-.', "'":'.----.'
     };
+
+    /* ═══ WABUN CODE (和文) ═══ */
+    const WABUN = {
+      'イ':'.-','ロ':'.-.-','ハ':'-...','ニ':'-.-.','ホ':'-..','ヘ':'.','ト':'..-..','チ':'..-.',
+      'リ':'--.','ヌ':'....','ル':'-.--.','ヲ':'.---','ワ':'-.-','カ':'.-..','ヨ':'--','タ':'-.',
+      'レ':'---','ソ':'---.','ツ':'.--.','ネ':'--.-','ナ':'.-.','ラ':'...','ム':'-','ウ':'..-',
+      'ヰ':'.-..-','ノ':'..--','オ':'.-...','ク':'...-','ヤ':'.--','マ':'-..-','ケ':'-.--',
+      'フ':'--..',  'コ':'----','エ':'-.---','テ':'.-.--','ア':'--.--','サ':'-.-.-','キ':'-.-..',
+      'ユ':'-..--','メ':'-...-','ミ':'..-.-','シ':'--.-.',  'ヱ':'.--.',  'ヒ':'--..-.','モ':'-..-.',
+      'セ':'.---.',  'ス':'---.-','ン':'.-.-.','゛':'..','゜':'..--.'
+    };
+    /* Hiragana → Katakana mapping for Wabun */
+    const HIRA2KATA = {};
+    for (let i = 0x3041; i <= 0x3096; i++) HIRA2KATA[String.fromCharCode(i)] = String.fromCharCode(i + 0x60);
+
+    /* ═══ SKATS (Korean) ═══ */
+    const SKATS_JAMO = {
+      'ㄱ':'.-..','ㄴ':'..-.','ㄷ':'-...','ㄹ':'...-','ㅁ':'--','ㅂ':'.--','ㅅ':'--.','ㅇ':'-.-',
+      'ㅈ':'.--.',  'ㅊ':'-.-.','ㅋ':'-..-','ㅌ':'--..','ㅍ':'---','ㅎ':'.---',
+      'ㄲ':'.-...-..','ㄸ':'-...-...','ㅃ':'.--..--','ㅆ':'--..--.','ㅉ':'.--..--.', 
+      'ㅏ':'.','ㅑ':'..','ㅓ':'-','ㅕ':'...','ㅗ':'.-','ㅛ':'-.','ㅜ':'....','ㅠ':'.-.',
+      'ㅡ':'-..','ㅣ':'..-','ㅐ':'--.-','ㅔ':'-.--','ㅒ':'..--.-','ㅖ':'...-.--',
+      'ㅘ':'.-..','ㅙ':'.---.-','ㅚ':'.-..-','ㅝ':'....-','ㅞ':'....-.--','ㅟ':'....-..',  'ㅢ':'-..--..'
+    };
+    const KR_INITIALS = ['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
+    const KR_MEDIALS = ['ㅏ','ㅐ','ㅑ','ㅒ','ㅓ','ㅔ','ㅕ','ㅖ','ㅗ','ㅘ','ㅙ','ㅚ','ㅛ','ㅜ','ㅝ','ㅞ','ㅟ','ㅠ','ㅡ','ㅢ','ㅣ'];
+    const KR_FINALS = ['','ㄱ','ㄲ','ㄳ','ㄴ','ㄵ','ㄶ','ㄷ','ㄹ','ㄺ','ㄻ','ㄼ','ㄽ','ㄾ','ㄿ','ㅀ','ㅁ','ㅂ','ㅄ','ㅅ','ㅆ','ㅇ','ㅈ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
+
+    function decomposeKorean(ch) {
+      const code = ch.charCodeAt(0) - 0xAC00;
+      if (code < 0 || code > 11171) return null;
+      const fi = code % 28, mid = ((code - fi) / 28) % 21, ini = Math.floor((code - fi) / 28 / 21);
+      const jamo = [KR_INITIALS[ini], KR_MEDIALS[mid]];
+      if (KR_FINALS[fi]) jamo.push(KR_FINALS[fi]);
+      return jamo;
+    }
+
+    /* ═══ CTC (Chinese Telegraph Code) — Common ~500 ═══ */
+    const CTC_COMMON = {
+      '的':'4104','一':'0001','是':'2553','不':'0008','了':'0077','在':'1068','人':'0086','有':'2589',
+      '我':'2769','他':'0104','这':'6631','這':'6631','中':'0022','大':'1129','来':'0441','來':'0441',
+      '上':'0006','个':'0057','國':'0948','国':'0948','到':'0451','说':'6133','說':'6133','们':'0101',
+      '們':'0101','为':'4875','為':'4875','和':'0735','你':'0162','地':'0966','出':'0416','会':'2588',
+      '會':'2588','时':'2514','時':'2514','要':'6006','也':'0046','子':'1311','得':'1779','就':'1432',
+      '那':'6719','着':'4253','下':'0007','自':'5765','之':'0024','年':'1628','过':'6609','過':'6609',
+      '后':'0686','後':'1745','作':'0149','里':'6849','裡':'6163','用':'3938','道':'6670','行':'5765',
+      '所':'2430','然':'3560','家':'1367','种':'4430','種':'4430','事':'0057','成':'2052','方':'2455',
+      '多':'1122','经':'4842','經':'4842','么':'0050','麼':'7797','去':'0654','法':'3127','学':'1331',
+      '學':'1331','如':'1172','都':'6757','同':'0681','现':'3799','現':'3799','当':'3093','當':'3093',
+      '没':'3296','沒':'3296','动':'0513','動':'0513','面':'7240','起':'6251','看':'4180','定':'1353',
+      '天':'1131','分':'0433','还':'6636','還':'6636','进':'6631','進':'6631','好':'1170','小':'1420',
+      '部':'6738','其':'0366','些':'0059','主':'0031','样':'2810','樣':'2810','理':'3702','心':'1800',
+      '她':'1126','本':'2609','前':'0467','开':'7030','開':'7030','但':'0111','因':'0987','只':'0706',
+      '从':'0101','從':'1745','想':'2552','实':'1399','實':'1399','日':'2480','三':'0005','已':'1399',
+      '高':'7559','长':'7022','長':'7022','正':'2973','外':'1037','将':'1903','將':'1903','两':'0649',
+      '兩':'0649','门':'7024','門':'7024','与':'0016','點':'7820','点':'7820','最':'2586','问':'7024',
+      '問':'7024','太':'1132','十':'0577','回':'3069','知':'4243','百':'4102','名':'0682','月':'2588',
+      '明':'2494','次':'2870','老':'5765','四':'0934','无':'2610','無':'2610','新':'2450','把':'2145',
+      '话':'6133','話':'6133','很':'1756','向':'0641','被':'4253','别':'0481','像':'0120','手':'2087',
+      '体':'0389','體':'7555','再':'0424','走':'6264','干':'0021','死':'2743','意':'2556','体':'0389',
+      '电':'7193','電':'7193','水':'3055','五':'0107','书':'2468','書':'2468','二':'0002','机':'2623',
+      '機':'2623','头':'7025','頭':'7207','力':'0472','世':'0013','间':'7044','間':'7044','白':'4101',
+      '先':'0281','海':'3189','并':'0393','對':'1417','对':'1417','可':'0668','口':'0656','什':'0088',
+      '九':'0043','比':'3024','八':'0044','七':'0003','六':'0362','十':'0577','字':'1316','花':'5363',
+      '山':'1472','金':'6855','木':'2611','火':'3499','土':'0960','風':'7591','风':'7591','雨':'7183',
+      '雪':'7185','云':'0061','雲':'7189','男':'3721','女':'1158','父':'3236','母':'3029','兄':'0398',
+      '弟':'1527','姐':'1198','妹':'1199','友':'0645','車':'6508','车':'6508','路':'6424','飛':'7378',
+      '飞':'7378','馬':'7456','马':'7456','牛':'3662','羊':'5765','鸟':'7694','鳥':'7694','魚':'7625',
+      '鱼':'7625','龙':'7893','龍':'7893','虎':'5765','春':'2504','夏':'1115','秋':'4428','冬':'0543',
+      '東':'2635','东':'2635','南':'0589','西':'6007','北':'0554','左':'1563','右':'0651','前':'0467',
+      '後':'1745','后':'0686','生':'3932','活':'3268','工':'1562','商':'0560','兵':'0445','王':'3769',
+      '李':'2621','张':'1728','張':'1728','陈':'7115','陳':'7115','林':'2651','黄':'7806','黃':'7806',
+      '赵':'6392','趙':'6392','周':'0939','吴':'0702','吳':'0702','刘':'0491','劉':'0491','杨':'2799',
+      '楊':'2799','孙':'1327','孫':'1327','食':'7375','飯':'7375','茶':'5765','酒':'6884','肉':'5765',
+      '米':'4717','飲':'7381','饮':'7381','吃':'0645','喝':'0828','买':'6025','買':'6025','卖':'6025',
+      '賣':'6025','穿':'4514','住':'0105','愛':'1947','爱':'1947','恨':'1801','怕':'1802','笑':'4550',
+      '哭':'0657','紅':'4849','红':'4849','藍':'5765','蓝':'5765','黑':'7815','青':'7230','色':'5765',
+      '光':'0342','音':'7299','声':'1154','聲':'5765','影':'1819','夢':'1125','梦':'1125','星':'2450',
+      '空':'4506','雲':'7189','云':'0061','河':'3051','湖':'3265','江':'3068','石':'4258','鐵':'6993',
+      '铁':'6993','銀':'6872','银':'6872','教':'2398','師':'1601','师':'1601','醫':'7178','医':'7178',
+      '病':'4109','药':'5765','藥':'5765','樂':'2799','乐':'2799','歌':'2706','舞':'5765','画':'3780',
+      '畫':'3780','門':'7024','门':'7024','窗':'4518','橋':'2905','桥':'2905','船':'5765','城':'0996',
+      '國':'0948','军':'0504','軍':'6571','平':'1627','安':'1344','危':'0544','戰':'2069','战':'2069',
+      '和':'0735','台':'0669','灣':'3864','湾':'3864','京':'0079','港':'3330','澳':'3380'
+    };
+    let CTC_FULL = null; /* loaded on demand */
+    let ctcLoading = false, ctcPending = null;
+
+    /* ═══ SCRIPT DETECTION ═══ */
+    function charScript(ch) {
+      const c = ch.charCodeAt(0);
+      if (c >= 0x3040 && c <= 0x309F) return 'ja'; /* hiragana */
+      if (c >= 0x30A0 && c <= 0x30FF) return 'ja'; /* katakana */
+      if (c >= 0x4E00 && c <= 0x9FFF) return 'zh'; /* CJK unified */
+      if (c >= 0x3400 && c <= 0x4DBF) return 'zh'; /* CJK extension A */
+      if (c >= 0xAC00 && c <= 0xD7AF) return 'ko'; /* Korean syllables */
+      if (c >= 0x1100 && c <= 0x11FF) return 'ko'; /* jamo */
+      if (c >= 0x3130 && c <= 0x318F) return 'ko'; /* compat jamo */
+      return 'en';
+    }
+
+    /* ═══ ENCODE CHARACTER → morse string ═══ */
+    function charToMorse(ch) {
+      const script = charScript(ch);
+      if (script === 'en') {
+        return { morse: MORSE[ch.toUpperCase()] || null, display: ch.toUpperCase(), script: 'en' };
+      }
+      if (script === 'ja') {
+        let kata = ch;
+        if (HIRA2KATA[ch]) kata = HIRA2KATA[ch];
+        const m = WABUN[kata];
+        return { morse: m || null, display: ch, script: 'ja' };
+      }
+      if (script === 'ko') {
+        const jamo = decomposeKorean(ch);
+        if (!jamo) return { morse: null, display: ch, script: 'ko' };
+        const parts = jamo.map(j => SKATS_JAMO[j]).filter(Boolean);
+        return { morse: parts.length ? parts.join(' ') : null, display: ch, jamo: jamo.join(''), script: 'ko' };
+      }
+      if (script === 'zh') {
+        const dict = CTC_FULL || CTC_COMMON;
+        const code = dict[ch];
+        if (code) {
+          const digits = code.split('').map(d => MORSE[d]).join(' ');
+          return { morse: digits, display: ch, ctc: code, script: 'zh' };
+        }
+        if (!CTC_FULL && !ctcLoading) {
+          /* mark as needing full dict */
+          return { morse: null, display: ch, script: 'zh', needsDict: true };
+        }
+        return { morse: null, display: ch, script: 'zh' };
+      }
+      return { morse: null, display: ch, script: 'en' };
+    }
 
     let sequence = [], elRefsV = [], elRefsH = [];
     let isPlaying = false, isLooping = false, playTimeouts = [];
@@ -879,36 +1155,107 @@
     const VEL = ['pp', 'mp', 'f', 'ff'], VEL_G = [0.1, 0.28, 0.55, 0.9];
     const PX_PER_UNIT = 20;
 
-    /* ═══ AUDIO ═══ */
+    /* ═══ AUDIO (pop-free) ═══ */
     let audioOk = false;
     async function ensureAudio() { if (!audioOk) { await Tone.start(); audioOk = true; } }
     function playTone(dur, vel) {
       const g = VEL_G[vel] * 0.6;
       if (soundMode === 'beep') {
-        const s = new Tone.Synth({ oscillator: { type: 'sine' }, envelope: { attack: 0.005, decay: 0.05, sustain: 0.8, release: 0.08 } }).toDestination();
-        s.volume.value = Tone.gainToDb(g); s.triggerAttackRelease(pitch, dur);
+        const s = new Tone.Synth({ oscillator: { type: 'sine' }, envelope: { attack: 0.005, decay: 0.05, sustain: 0.8, release: 0.02 } }).toDestination();
+        s.volume.value = Tone.gainToDb(g); s.triggerAttackRelease(pitch, Math.max(0.01, dur - 0.015));
         setTimeout(() => s.dispose(), (dur + 0.5) * 1000);
       } else {
-        const s = new Tone.MembraneSynth({ pitchDecay: 0.01, octaves: 2, envelope: { attack: 0.001, decay: dur * 0.9, sustain: 0, release: 0.05 } }).toDestination();
+        const s = new Tone.MembraneSynth({ pitchDecay: 0.01, octaves: 2, envelope: { attack: 0.001, decay: dur * 0.9, sustain: 0, release: 0.02 } }).toDestination();
         s.volume.value = Tone.gainToDb(g); s.triggerAttackRelease(pitch, dur);
         setTimeout(() => s.dispose(), (dur + 0.5) * 1000);
       }
     }
 
-    /* ═══ ENCODE ═══ */
+    /* ═══ ENCODE (multi-language) ═══ */
     function encode(text) {
-      const u = text.toUpperCase().trim(); if (!u) return [];
-      const seq = [], words = u.split(/\s+/); let ci = 0;
-      words.forEach((w, wi) => {
+      const t = text.trim(); if (!t) return [];
+      const seq = []; let ci = 0;
+      const words = t.split(/(\s+)/);
+      words.forEach(w => {
+        if (/^\s+$/.test(w)) { seq.push({ type: 'word-gap' }); return; }
         for (let i = 0; i < w.length; i++) {
-          const ch = w[i], code = MORSE[ch]; if (!code) { ci++; continue; }
-          for (let e = 0; e < code.length; e++)
-            seq.push({ type: code[e] === '.' ? 'dot' : 'dash', char: ch, code, charIdx: ci, vel: 3 });
+          const ch = w[i];
+          const info = charToMorse(ch);
+          if (!info.morse) { ci++; continue; }
+          const parts = info.morse.split(' ').filter(Boolean);
+          const displayCode = info.ctc ? info.ctc + ' ' + info.morse : info.morse;
+          parts.forEach(part => {
+            for (let e = 0; e < part.length; e++) {
+              seq.push({ type: part[e] === '.' ? 'dot' : 'dash', char: info.display, code: displayCode, charIdx: ci, vel: 3, script: info.script });
+            }
+            /* inter-part gap (between jamo or CTC digits) */
+          });
           ci++;
           if (i < w.length - 1) seq.push({ type: 'char-gap' });
         }
-        if (wi < words.length - 1) seq.push({ type: 'word-gap' });
-      }); return seq;
+      });
+      return seq;
+    }
+
+    /* ═══ STACKED PREVIEW ═══ */
+    function renderPreview(text) {
+      const wrap = document.getElementById('previewWrap');
+      const inner = document.getElementById('previewInner');
+      inner.innerHTML = '';
+      if (!text.trim()) { wrap.classList.remove('has-content'); return; }
+      wrap.classList.add('has-content');
+      let needsFullDict = false;
+      const detected = new Set(['en']);
+
+      for (let i = 0; i < text.length; i++) {
+        const ch = text[i];
+        if (/\s/.test(ch)) {
+          const sp = document.createElement('div'); sp.className = 'preview-space';
+          inner.appendChild(sp); continue;
+        }
+        const info = charToMorse(ch);
+        if (info.script !== 'en') detected.add(info.script);
+        if (info.needsDict) needsFullDict = true;
+        const col = document.createElement('div'); col.className = 'preview-col';
+        const charEl = document.createElement('div'); charEl.className = 'preview-char'; charEl.textContent = ch;
+        const morseEl = document.createElement('div'); morseEl.className = 'preview-morse';
+        if (info.ctc) morseEl.textContent = info.ctc;
+        else if (info.morse) morseEl.textContent = info.morse.replace(/ /g, '/');
+        else morseEl.textContent = '?';
+        if (!info.morse) morseEl.style.color = '#c44';
+        col.appendChild(charEl);
+        col.appendChild(morseEl);
+        inner.appendChild(col);
+      }
+
+      /* update language indicators */
+      document.querySelectorAll('.lang-tab').forEach(tab => {
+        const lang = tab.dataset.lang;
+        if (lang === 'en') { tab.className = 'lang-tab active'; return; }
+        tab.className = detected.has(lang) ? 'lang-tab detected' : 'lang-tab';
+      });
+
+      /* show CTC prompt if needed */
+      if (needsFullDict && !CTC_FULL) {
+        document.getElementById('ctcPrompt').classList.add('show');
+      }
+    }
+
+    /* ═══ CTC LAZY LOAD ═══ */
+    function loadFullCTC() {
+      if (CTC_FULL || ctcLoading) return;
+      ctcLoading = true;
+      document.getElementById('ctcPrompt').classList.remove('show');
+      fetch('ctc-dict.json').then(r => r.json()).then(data => {
+        CTC_FULL = Object.assign({}, CTC_COMMON, data);
+        ctcLoading = false;
+        /* re-encode with full dict */
+        if (ctcPending) { ctcPending(); ctcPending = null; }
+      }).catch(e => {
+        console.error('CTC load failed:', e);
+        ctcLoading = false;
+        alert('Failed to load Chinese dictionary. Check that ctc-dict.json is in the same folder.');
+      });
     }
 
     /* ═══ RENDER VERTICAL ═══ */
@@ -954,7 +1301,7 @@
       const rulerInner = document.getElementById('rulerInner');
       elRefsH = []; inner.innerHTML = ''; rulerInner.innerHTML = '';
       if (!sequence.length) {
-        inner.innerHTML = '<div class="seq-empty" id="seqEmptyH" style="position:relative;min-height:200px"><div class="seq-empty-morse">· · · — — — · · ·</div><div>Type a phrase and hit ENCODE</div></div>';
+        inner.innerHTML = '<div class="seq-empty" id="seqEmptyH" style="position:relative;min-height:200px"><div class="seq-empty-morse">· · · — — — · · ·</div><div>Type a phrase above</div></div>';
         return;
       }
       const chars = []; let curChar = null, totalUnits = 0;
@@ -975,13 +1322,11 @@
       inner.style.width = totalW + 'px';
       rulerInner.style.width = totalW + 'px';
 
-      // ruler
       for (let u = 0; u <= totalUnits; u += 10) {
         const m = document.createElement('div'); m.className = 'ruler-mark';
         m.style.left = u * PX_PER_UNIT + 'px'; m.textContent = u;
         rulerInner.appendChild(m);
       }
-
       const gridPos = [];
       for (let u = 0; u <= totalUnits; u += 10) gridPos.push(u * PX_PER_UNIT);
 
@@ -997,11 +1342,9 @@
         row.appendChild(hdr);
         const lane = document.createElement('div'); lane.className = 'track-lane';
         lane.style.width = totalW + 'px';
-
         gridPos.forEach(px => {
           const gl = document.createElement('div'); gl.className = 'grid-line'; gl.style.left = px + 'px'; lane.appendChild(gl);
         });
-
         ch.elements.forEach(e => {
           const el = document.createElement('div');
           el.className = 'mel-h ' + e.type; el.dataset.vel = e.item.vel;
@@ -1014,8 +1357,6 @@
         });
         row.appendChild(lane); inner.appendChild(row);
       });
-
-      // sync ruler scroll with tracks scroll
       const ts = document.getElementById('tracksScroll');
       const rs = document.getElementById('rulerScroll');
       ts.onscroll = () => { rs.scrollLeft = ts.scrollLeft; };
@@ -1036,7 +1377,6 @@
       elRefsV.forEach(r => r.dom.classList.remove('playing'));
       elRefsH.forEach(r => r.dom.classList.remove('playing'));
       document.getElementById('playBtn').classList.remove('playing');
-      /* playhead stays visible at last position; scroll stays put */
     }
 
     async function startPlayback() {
@@ -1047,15 +1387,12 @@
       const phV = document.getElementById('playheadV'), wV = document.getElementById('seqVWrap');
       const phH = document.getElementById('playheadH'), wH = document.getElementById('tracksScroll');
       phV.style.display = 'block'; phH.style.display = 'block';
-      /* scroll jumps to first element on fresh play */
       if (elRefsV.length) {
         const wr = wV.getBoundingClientRect(), er = elRefsV[0].dom.getBoundingClientRect();
         const y = er.top - wr.top + wV.scrollTop;
         wV.scrollTo({ top: Math.max(0, y - 40), behavior: 'smooth' });
       }
-      if (elRefsH.length) {
-        wH.scrollTo({ left: 0, behavior: 'smooth' });
-      }
+      if (elRefsH.length) { wH.scrollTo({ left: 0, behavior: 'smooth' }); }
 
       function schedule() {
         const u = unitMs(); let time = 0, eV = 0, eH = 0;
@@ -1066,6 +1403,7 @@
             playTimeouts.push(setTimeout(() => {
               if (!isPlaying) return;
               playTone(dur, it.vel);
+              /* vertical scroll follow */
               const rv = elRefsV[cV]; if (rv) {
                 rv.dom.classList.add('playing');
                 const er = rv.dom.getBoundingClientRect(), wr = wV.getBoundingClientRect();
@@ -1073,12 +1411,21 @@
                 phV.style.top = y + 'px';
                 wV.scrollTo({ top: y - wV.clientHeight / 2, behavior: 'smooth' });
               }
+              /* horizontal scroll follow */
               const rh = elRefsH[cH]; if (rh) {
                 rh.dom.classList.add('playing');
                 const px = rh.startUnit * PX_PER_UNIT;
                 phH.style.left = (80 + px) + 'px';
                 if (px > wH.scrollLeft + wH.clientWidth - 150 || px < wH.scrollLeft)
                   wH.scrollTo({ left: px - 100, behavior: 'smooth' });
+                /* desktop vertical scroll follow for track rows */
+                const rowEl = rh.dom.closest('.track-row');
+                if (rowEl) {
+                  const rr = rowEl.getBoundingClientRect(), wr2 = wH.getBoundingClientRect();
+                  const ry = rr.top - wr2.top + wH.scrollTop + rr.height / 2;
+                  if (ry > wH.scrollTop + wH.clientHeight - 60 || ry < wH.scrollTop + 30)
+                    wH.scrollTo({ top: ry - wH.clientHeight / 2 });
+                }
               }
               setTimeout(() => { if (rv) rv.dom.classList.remove('playing'); if (rh) rh.dom.classList.remove('playing'); }, u * units * 0.85);
             }, t));
@@ -1111,6 +1458,12 @@
 
     function setBpm(v) { bpm = Math.max(40, Math.min(300, Math.round(v))); document.getElementById('bpmInput').value = bpm; }
 
+    /* ═══ TEXTAREA AUTO-RESIZE ═══ */
+    function autoResize(el) {
+      el.style.height = 'auto';
+      el.style.height = Math.min(el.scrollHeight, 100) + 'px';
+    }
+
     /* ═══ INIT ═══ */
     document.addEventListener('DOMContentLoaded', () => {
       const params = new URLSearchParams(window.location.search);
@@ -1120,9 +1473,17 @@
       document.getElementById('layoutToggle').onclick = () => setLayout(layoutMode === 'desktop' ? 'mobile' : 'desktop');
 
       const inp = document.getElementById('textInput');
-      function doEncode() { stopPlayback(); sequence = encode(inp.value); renderAll(); }
+      function doEncode() {
+        stopPlayback();
+        renderPreview(inp.value);
+        sequence = encode(inp.value);
+        renderAll();
+      }
       let tmr = null;
-      inp.oninput = () => { clearTimeout(tmr); tmr = setTimeout(doEncode, 350); };
+      inp.oninput = () => {
+        autoResize(inp);
+        clearTimeout(tmr); tmr = setTimeout(doEncode, 300);
+      };
 
       document.getElementById('playBtn').onclick = startPlayback;
       document.getElementById('loopBtn').onclick = function () { isLooping = !isLooping; this.classList.toggle('active', isLooping); };
@@ -1144,9 +1505,19 @@
         this.textContent = soundMode === 'beep' ? 'BEEP' : 'PERC';
       };
 
-      document.querySelectorAll('.lang-tab:not([disabled])').forEach(t => {
-        t.onclick = () => { document.querySelectorAll('.lang-tab').forEach(x => x.classList.remove('active')); t.classList.add('active'); };
-      });
+      /* Info popup */
+      document.getElementById('appTitle').onclick = () => {
+        document.getElementById('infoOverlay').classList.add('open');
+      };
+
+      /* CTC download */
+      document.getElementById('ctcDownloadBtn').onclick = () => {
+        loadFullCTC();
+        ctcPending = doEncode;
+      };
+      document.getElementById('ctcDismissBtn').onclick = () => {
+        document.getElementById('ctcPrompt').classList.remove('show');
+      };
 
       if (layoutMode === 'desktop') inp.focus();
     });
