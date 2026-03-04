@@ -1071,8 +1071,7 @@
                 const er = rv.dom.getBoundingClientRect(), wr = wV.getBoundingClientRect();
                 const y = er.top - wr.top + wV.scrollTop + er.height / 2;
                 phV.style.top = y + 'px';
-                if (y > wV.scrollTop + wV.clientHeight - 80 || y < wV.scrollTop + 40)
-                  wV.scrollTo({ top: y - wV.clientHeight / 3, behavior: 'smooth' });
+                wV.scrollTo({ top: y - wV.clientHeight / 2, behavior: 'smooth' });
               }
               const rh = elRefsH[cH]; if (rh) {
                 rh.dom.classList.add('playing');
