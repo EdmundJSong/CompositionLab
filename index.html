@@ -5,136 +5,170 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
 <title>Composition Lab</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  :root {
-    --bg: #0a0a0a; --surface: #111; --surface2: #161616;
-    --border: #222; --text: #e8e4dd; --text2: #888; --text3: #555;
-    --amber: #d4912a; --amber-dim: rgba(212,145,42,0.08);
-    --amber-glow: rgba(212,145,42,0.25);
-  }
-  html, body {
-    height: 100%; overflow: hidden;
-    font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text);
-  }
+  html, body { height: 100%; overflow: hidden; }
   body {
-    display: flex; flex-direction: column; align-items: center;
-    justify-content: center; position: fixed; inset: 0;
+    background: #0a0a0a; color: #e8e4dd;
+    font-family: 'JetBrains Mono', monospace;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    position: fixed; inset: 0;
     -webkit-user-select: none; user-select: none;
   }
+
+  /* subtle lattice bg */
   body::before {
-    content: ''; position: absolute; inset: 0;
+    content: ''; position: absolute; inset: 0; opacity: 0.04;
     background-image:
-      linear-gradient(rgba(212,145,42,0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(212,145,42,0.03) 1px, transparent 1px);
-    background-size: 60px 60px; pointer-events: none;
+      linear-gradient(60deg, #d4912a 1px, transparent 1px),
+      linear-gradient(-60deg, #d4912a 1px, transparent 1px),
+      linear-gradient(0deg, #d4912a 1px, transparent 1px);
+    background-size: 40px 69px;
+    pointer-events: none;
   }
-  .header { text-align: center; margin-bottom: 48px; position: relative; z-index: 1; }
-  .header h1 {
-    font-family: 'JetBrains Mono', monospace; font-weight: 700;
-    font-size: clamp(28px, 6vw, 48px); letter-spacing: 2px;
-    background: linear-gradient(135deg, var(--text) 0%, var(--amber) 100%);
+
+  .container {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 48px; position: relative; z-index: 1; width: 100%;
+    max-width: 400px; padding: 0 24px;
+  }
+
+  .title {
+    font-weight: 700; font-size: clamp(20px, 5vw, 32px);
+    letter-spacing: 3px; text-align: center;
+    background: linear-gradient(135deg, #e8e4dd 30%, #d4912a 100%);
     -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
   }
-  .header p {
-    font-size: 14px; color: var(--text3); margin-top: 8px;
-    font-weight: 300; letter-spacing: 1px;
+
+  .menu { display: flex; flex-direction: column; gap: 2px; width: 100%; }
+
+  .menu-item {
+    display: flex; align-items: center; gap: 16px;
+    padding: 18px 20px; background: #111;
+    border: 1px solid #1a1a1a;
+    cursor: pointer; transition: all 0.25s;
+    text-decoration: none; color: #e8e4dd;
   }
-  .header p span { color: var(--text2); }
-  .cards {
-    display: flex; gap: 24px; padding: 0 24px;
-    max-width: 720px; width: 100%; position: relative; z-index: 1;
+  .menu-item:first-child { border-radius: 12px 12px 0 0; }
+  .menu-item:last-child { border-radius: 0 0 12px 12px; }
+  .menu-item:hover { background: #161616; border-color: #d4912a; }
+  .menu-item:active { transform: scale(0.99); }
+
+  .menu-item.disabled {
+    opacity: 0.3; cursor: not-allowed;
+    pointer-events: none;
   }
-  .card {
-    flex: 1; background: var(--surface); border: 1px solid var(--border);
-    border-radius: 16px; padding: 32px 28px; cursor: pointer;
-    transition: all 0.35s cubic-bezier(0.2, 0, 0, 1);
-    text-decoration: none; color: inherit;
-    display: flex; flex-direction: column; gap: 16px;
-    position: relative; overflow: hidden;
-  }
-  .card::before {
-    content: ''; position: absolute; inset: 0;
-    background: radial-gradient(circle at 50% 120%, var(--amber-dim) 0%, transparent 70%);
-    opacity: 0; transition: opacity 0.35s;
-  }
-  .card:hover { border-color: var(--amber); transform: translateY(-4px); }
-  .card:hover::before { opacity: 1; }
-  .card:active { transform: translateY(-1px) scale(0.99); }
-  .card-icon {
-    width: 48px; height: 48px; border-radius: 12px;
-    background: var(--surface2); border: 1px solid var(--border);
+
+  .menu-icon {
+    width: 36px; height: 36px; flex-shrink: 0;
     display: flex; align-items: center; justify-content: center;
-    font-size: 22px; transition: all 0.35s;
+    font-size: 16px; color: #888;
+    background: #1a1a1a; border-radius: 8px;
+    border: 1px solid #222;
+    transition: all 0.25s;
   }
-  .card:hover .card-icon { border-color: var(--amber); background: var(--amber-dim); }
-  .card-title {
-    font-family: 'JetBrains Mono', monospace; font-weight: 600;
-    font-size: 18px; letter-spacing: 0.5px;
+  .menu-item:hover .menu-icon { border-color: #d4912a; color: #d4912a; }
+
+  .menu-icon svg { width: 18px; height: 18px; fill: currentColor; }
+
+  .menu-label {
+    font-size: 13px; font-weight: 600; letter-spacing: 1px;
   }
-  .card-title span { color: var(--amber); }
-  .card-desc { font-size: 13px; color: var(--text2); line-height: 1.6; font-weight: 300; }
-  .card-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: auto; }
-  .card-tag {
-    padding: 3px 10px; border-radius: 20px; font-size: 10px;
-    font-family: 'JetBrains Mono', monospace; font-weight: 500;
-    background: var(--surface2); border: 1px solid var(--border);
-    color: var(--text3); letter-spacing: 0.3px;
+
+  .menu-badge {
+    margin-left: auto; font-size: 9px; font-weight: 500;
+    letter-spacing: 0.5px; color: #555;
+    padding: 3px 8px; border-radius: 4px;
+    border: 1px solid #222; background: #0e0e0e;
   }
-  .card:hover .card-tag { border-color: rgba(212,145,42,0.2); color: var(--text2); }
+
+  .menu-arrow {
+    margin-left: auto; color: #333; font-size: 16px;
+    transition: color 0.25s;
+  }
+  .menu-item:hover .menu-arrow { color: #d4912a; }
+
   .footer {
-    position: absolute; bottom: 20px; text-align: center;
-    font-size: 11px; color: var(--text3); letter-spacing: 0.5px; z-index: 1;
+    font-size: 11px; font-weight: 400;
+    letter-spacing: 1.5px; color: #444;
   }
-  .footer a { color: var(--text2); text-decoration: none; }
-  .footer a:hover { color: var(--amber); }
-  @media (max-width: 600px) {
-    .cards { flex-direction: column; gap: 16px; padding: 0 16px; }
-    .card { padding: 24px 20px; }
-    .header { margin-bottom: 32px; }
+
+  /* view toggle */
+  .view-toggle {
+    position: fixed; top: 12px; right: 12px; z-index: 100;
+    width: 32px; height: 32px; border-radius: 8px;
+    border: 1px solid #222; background: #111;
+    color: #555; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
   }
+  .view-toggle:hover { border-color: #d4912a; color: #d4912a; }
+  .view-toggle svg { width: 16px; height: 16px; fill: currentColor; }
 </style>
 </head>
 <body>
-  <div class="header">
-    <h1>COMPOSITION LAB</h1>
-    <p><span>Edmund Song</span> — experimental composition tools</p>
+
+  <div class="container">
+    <div class="title">COMPOSITION LAB</div>
+
+    <nav class="menu">
+      <a class="menu-item" href="tonnetz.html" id="linkTonnetz">
+        <div class="menu-icon">
+          <svg viewBox="0 0 24 24"><path d="M12 2L2 19h20L12 2zm0 4l7 12H5l7-12z"/></svg>
+        </div>
+        <span class="menu-label">TONNETZ TONE ROW</span>
+        <span class="menu-arrow">›</span>
+      </a>
+      <a class="menu-item" href="morse.html" id="linkMorse">
+        <div class="menu-icon">·—</div>
+        <span class="menu-label">MORSE SEQ</span>
+        <span class="menu-arrow">›</span>
+      </a>
+      <div class="menu-item disabled">
+        <div class="menu-icon">⠃</div>
+        <span class="menu-label">BRAILLE SEQ</span>
+        <span class="menu-badge">COMING SOON</span>
+      </div>
+    </nav>
+
+    <div class="footer">EDMUND SONG</div>
   </div>
-  <div class="cards">
-    <a class="card" href="tonnetz.html">
-      <div class="card-icon">漢</div>
-      <div class="card-title">TONNETZ<span>.</span></div>
-      <div class="card-desc">
-        CJK characters mapped onto a triangular pitch lattice.
-        Type or draw — each stroke activates chromatic nodes.
-        Spatial composition through calligraphy.
-      </div>
-      <div class="card-tags">
-        <span class="card-tag">PITCH LATTICE</span>
-        <span class="card-tag">CJK</span>
-        <span class="card-tag">DRAW</span>
-        <span class="card-tag">TONE.JS</span>
-      </div>
-    </a>
-    <a class="card" href="morse.html">
-      <div class="card-icon">·—</div>
-      <div class="card-title">MORSE<span>SEQ</span></div>
-      <div class="card-desc">
-        Text encoded into morse code rhythms.
-        A falling-note sequencer with per-element velocity control.
-        EN · ZH · JA · KO.
-      </div>
-      <div class="card-tags">
-        <span class="card-tag">RHYTHM</span>
-        <span class="card-tag">SEQUENCER</span>
-        <span class="card-tag">MORSE</span>
-        <span class="card-tag">MULTILINGUAL</span>
-      </div>
-    </a>
-  </div>
-  <div class="footer">
-    <a href="https://github.com/esongsong/composition-lab" target="_blank">github</a>
-  </div>
+
+  <button class="view-toggle" id="viewToggle" title="Toggle mobile/desktop view">
+    <svg id="icoPhone" viewBox="0 0 24 24"><path d="M7 1h10a2 2 0 012 2v18a2 2 0 01-2 2H7a2 2 0 01-2-2V3a2 2 0 012-2zm0 2v14h10V3H7zm3 16h4v1h-4v-1z"/></svg>
+    <svg id="icoDesktop" viewBox="0 0 24 24" style="display:none"><path d="M3 4h18a1 1 0 011 1v11a1 1 0 01-1 1H3a1 1 0 01-1-1V5a1 1 0 011-1zm1 2v9h16V6H4zm4 13h8v1H8v-1z"/></svg>
+  </button>
+
+  <script>
+    // View preference: auto, mobile, or desktop
+    const params = new URLSearchParams(window.location.search);
+    let viewPref = params.get('view') || 'auto';
+    const isMobile = window.innerWidth <= 768;
+    
+    function updateToggleIcon() {
+      const showingMobile = viewPref === 'mobile' || (viewPref === 'auto' && isMobile);
+      document.getElementById('icoPhone').style.display = showingMobile ? 'block' : 'none';
+      document.getElementById('icoDesktop').style.display = showingMobile ? 'none' : 'block';
+    }
+    
+    function updateLinks() {
+      const suffix = viewPref === 'auto' ? '' : '?view=' + viewPref;
+      document.getElementById('linkTonnetz').href = 'tonnetz.html' + suffix;
+      document.getElementById('linkMorse').href = 'morse.html' + suffix;
+    }
+    
+    document.getElementById('viewToggle').onclick = () => {
+      const currentlyMobile = viewPref === 'mobile' || (viewPref === 'auto' && isMobile);
+      viewPref = currentlyMobile ? 'desktop' : 'mobile';
+      updateToggleIcon();
+      updateLinks();
+    };
+    
+    updateToggleIcon();
+    updateLinks();
+  </script>
+
 </body>
 </html>
