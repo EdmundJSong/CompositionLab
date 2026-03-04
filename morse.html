@@ -169,6 +169,8 @@
       color: var(--text);
       line-height: 1.3;
     }
+    .preview-char ruby { font-size: 14px; }
+    .preview-char rt { font-size: 8px; color: var(--amber); font-weight: 400; }
     .preview-morse {
       font-size: 9px;
       color: var(--text3);
@@ -186,39 +188,6 @@
       width: 8px;
       height: 1px;
       background: var(--border);
-    }
-
-    /* ═══ LANG INDICATORS ═══ */
-
-    .lang-tabs {
-      display: flex;
-      gap: 3px;
-      flex-shrink: 0;
-    }
-
-    .lang-tab {
-      padding: 6px 12px;
-      border-radius: 5px;
-      border: 1px solid var(--border);
-      background: transparent;
-      color: var(--text3);
-      font-size: 11px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s;
-      font-family: inherit;
-    }
-
-    .lang-tab.active {
-      background: var(--amber-dim);
-      border-color: var(--amber);
-      color: var(--amber);
-    }
-
-    .lang-tab.detected {
-      background: rgba(212,145,42,0.08);
-      border-color: rgba(212,145,42,0.3);
-      color: rgba(212,145,42,0.7);
     }
 
     /* ═══ INFO POPUP ═══ */
@@ -880,14 +849,8 @@
   </div>
 
   <div class="input-row">
-    <textarea class="text-input" id="textInput" placeholder="Type a phrase…" autocomplete="off"
+    <textarea class="text-input" id="textInput" placeholder="type here…" autocomplete="off"
       spellcheck="false" rows="1"></textarea>
-    <div class="lang-tabs" id="langTabs">
-      <button class="lang-tab active" data-lang="en">EN</button>
-      <button class="lang-tab" data-lang="zh">中</button>
-      <button class="lang-tab" data-lang="ja">あ</button>
-      <button class="lang-tab" data-lang="ko">한</button>
-    </div>
   </div>
 
   <!-- Stacked preview -->
@@ -973,9 +936,7 @@
   <div class="seq-v-wrap" id="seqVWrap">
     <div class="seq-v" id="seqV">
       <div class="seq-empty" id="seqEmptyV">
-        <div class="seq-empty-morse">· · · — — — · · ·</div>
-        <div class="seq-empty-morse">· · · — — — · · ·</div>
-        <div>Type a phrase in the box above</div>
+        <div style="opacity:0.15;color:var(--amber);font-size:14px">type here…</div>
       </div>
       <div class="playhead-v" id="playheadV"></div>
     </div>
@@ -992,8 +953,7 @@
     <div class="tracks-scroll" id="tracksScroll">
       <div class="tracks-inner" id="tracksInner">
         <div class="seq-empty" id="seqEmptyH" style="position:relative;min-height:200px">
-          <div class="seq-empty-morse">· · · — — — · · ·</div>
-          <div>Type a phrase in the box above</div>
+          <div style="opacity:0.15;color:var(--amber);font-size:14px">type here…</div>
         </div>
       </div>
       <div class="playhead-h" id="playheadH"></div>
@@ -1155,6 +1115,105 @@
     const VEL = ['pp', 'mp', 'f', 'ff'], VEL_G = [0.1, 0.28, 0.55, 0.9];
     const PX_PER_UNIT = 20;
 
+    /* ═══ IME KANA TRACKING ═══ */
+    let imeKanaCache = new Map(); /* "東京" → "とうきょう" */
+    let lastCompKana = '', isComposing = false;
+
+    function isCJK(ch) {
+      const c = ch.charCodeAt(0);
+      return (c >= 0x4E00 && c <= 0x9FFF) || (c >= 0x3400 && c <= 0x4DBF);
+    }
+    function isKana(ch) {
+      const c = ch.charCodeAt(0);
+      return (c >= 0x3040 && c <= 0x309F) || (c >= 0x30A0 && c <= 0x30FF);
+    }
+
+    /* Resolve text: decide Japanese vs Chinese for CJK characters */
+    function resolveText(text) {
+      const result = [];
+      let i = 0;
+      while (i < text.length) {
+        const ch = text[i];
+        if (isCJK(ch)) {
+          /* Try longest match in imeKanaCache */
+          let matched = false;
+          for (let len = Math.min(8, text.length - i); len >= 1; len--) {
+            const sub = text.slice(i, i + len);
+            if (imeKanaCache.has(sub)) {
+              const kana = imeKanaCache.get(sub);
+              /* Distribute kana across kanji chars */
+              const kanaPerChar = Math.ceil(kana.length / sub.length);
+              for (let j = 0; j < sub.length; j++) {
+                const kStart = j * kanaPerChar;
+                const kEnd = Math.min(kana.length, (j + 1) * kanaPerChar);
+                const kSlice = kana.slice(kStart, kEnd);
+                result.push({ char: sub[j], kana: kSlice, fullKana: kana, fullKanji: sub, script: 'ja-kanji' });
+              }
+              i += len; matched = true; break;
+            }
+          }
+          if (!matched) {
+            /* Check if text contains any kana nearby → Japanese context */
+            const hasKanaNearby = text.split('').some(c => isKana(c));
+            if (hasKanaNearby) {
+              result.push({ char: ch, kana: null, script: 'ja-kanji' }); /* kanji without reading */
+            } else {
+              result.push({ char: ch, kana: null, script: 'zh' }); /* Chinese */
+            }
+            i++;
+          }
+        } else {
+          result.push({ char: ch, kana: null, script: charScript(ch) });
+          i++;
+        }
+      }
+      return result;
+    }
+
+    /* Encode a resolved char to morse */
+    function resolvedToMorse(r) {
+      if (r.script === 'en') {
+        return { morse: MORSE[r.char.toUpperCase()] || null, display: r.char.toUpperCase(), script: 'en' };
+      }
+      if (r.script === 'ja') {
+        let kata = r.char;
+        if (HIRA2KATA[r.char]) kata = HIRA2KATA[r.char];
+        const m = WABUN[kata];
+        return { morse: m || null, display: r.char, script: 'ja' };
+      }
+      if (r.script === 'ja-kanji') {
+        if (r.kana) {
+          /* Encode each kana character via Wabun */
+          const parts = [];
+          for (const k of r.kana) {
+            let kata = k;
+            if (HIRA2KATA[k]) kata = HIRA2KATA[k];
+            const m = WABUN[kata];
+            if (m) parts.push(m);
+          }
+          return { morse: parts.length ? parts.join(' ') : null, display: r.char, ruby: r.kana, script: 'ja-kanji' };
+        }
+        return { morse: null, display: r.char, ruby: '?', script: 'ja-kanji' };
+      }
+      if (r.script === 'ko') {
+        const jamo = decomposeKorean(r.char);
+        if (!jamo) return { morse: null, display: r.char, script: 'ko' };
+        const parts = jamo.map(j => SKATS_JAMO[j]).filter(Boolean);
+        return { morse: parts.length ? parts.join(' ') : null, display: r.char, jamo: jamo.join(''), script: 'ko' };
+      }
+      if (r.script === 'zh') {
+        const dict = CTC_FULL || CTC_COMMON;
+        const code = dict[r.char];
+        if (code) {
+          const digits = code.split('').map(d => MORSE[d]).join(' ');
+          return { morse: digits, display: r.char, ctc: code, script: 'zh' };
+        }
+        if (!CTC_FULL && !ctcLoading) return { morse: null, display: r.char, script: 'zh', needsDict: true };
+        return { morse: null, display: r.char, script: 'zh' };
+      }
+      return { morse: null, display: r.char, script: 'en' };
+    }
+
     /* ═══ AUDIO (pop-free) ═══ */
     let audioOk = false;
     async function ensureAudio() { if (!audioOk) { await Tone.start(); audioOk = true; } }
@@ -1174,26 +1233,29 @@
     /* ═══ ENCODE (multi-language) ═══ */
     function encode(text) {
       const t = text.trim(); if (!t) return [];
+      const resolved = resolveText(t);
       const seq = []; let ci = 0;
-      const words = t.split(/(\s+)/);
-      words.forEach(w => {
-        if (/^\s+$/.test(w)) { seq.push({ type: 'word-gap' }); return; }
-        for (let i = 0; i < w.length; i++) {
-          const ch = w[i];
-          const info = charToMorse(ch);
-          if (!info.morse) { ci++; continue; }
-          const parts = info.morse.split(' ').filter(Boolean);
-          const displayCode = info.ctc ? info.ctc + ' ' + info.morse : info.morse;
-          parts.forEach(part => {
-            for (let e = 0; e < part.length; e++) {
-              seq.push({ type: part[e] === '.' ? 'dot' : 'dash', char: info.display, code: displayCode, charIdx: ci, vel: 3, script: info.script });
-            }
-            /* inter-part gap (between jamo or CTC digits) */
-          });
-          ci++;
-          if (i < w.length - 1) seq.push({ type: 'char-gap' });
+      let lastWasSpace = false;
+      resolved.forEach(r => {
+        if (/\s/.test(r.char)) {
+          if (!lastWasSpace) seq.push({ type: 'word-gap' });
+          lastWasSpace = true; return;
         }
+        lastWasSpace = false;
+        const info = resolvedToMorse(r);
+        if (!info.morse) { ci++; return; }
+        const parts = info.morse.split(' ').filter(Boolean);
+        const displayCode = info.ctc ? info.ctc + ' ' + info.morse : info.ruby ? info.ruby + ' ' + info.morse : info.morse;
+        parts.forEach(part => {
+          for (let e = 0; e < part.length; e++) {
+            seq.push({ type: part[e] === '.' ? 'dot' : 'dash', char: info.display, code: displayCode, charIdx: ci, vel: 3, script: info.script });
+          }
+        });
+        ci++;
+        seq.push({ type: 'char-gap' });
       });
+      /* remove trailing char-gap */
+      if (seq.length && seq[seq.length - 1].type === 'char-gap') seq.pop();
       return seq;
     }
 
@@ -1205,19 +1267,32 @@
       if (!text.trim()) { wrap.classList.remove('has-content'); return; }
       wrap.classList.add('has-content');
       let needsFullDict = false;
-      const detected = new Set(['en']);
+      const resolved = resolveText(text);
 
-      for (let i = 0; i < text.length; i++) {
-        const ch = text[i];
-        if (/\s/.test(ch)) {
+      resolved.forEach(r => {
+        if (/\s/.test(r.char)) {
           const sp = document.createElement('div'); sp.className = 'preview-space';
-          inner.appendChild(sp); continue;
+          inner.appendChild(sp); return;
         }
-        const info = charToMorse(ch);
-        if (info.script !== 'en') detected.add(info.script);
+        const info = resolvedToMorse(r);
         if (info.needsDict) needsFullDict = true;
         const col = document.createElement('div'); col.className = 'preview-col';
-        const charEl = document.createElement('div'); charEl.className = 'preview-char'; charEl.textContent = ch;
+
+        /* Character display — with ruby for ja-kanji */
+        const charEl = document.createElement('div'); charEl.className = 'preview-char';
+        if (r.script === 'ja-kanji') {
+          const ruby = document.createElement('ruby');
+          ruby.textContent = r.char;
+          const rt = document.createElement('rt');
+          rt.textContent = r.kana || '?';
+          if (!r.kana) rt.style.color = '#c44';
+          ruby.appendChild(rt);
+          charEl.innerHTML = '';
+          charEl.appendChild(ruby);
+        } else {
+          charEl.textContent = r.char;
+        }
+
         const morseEl = document.createElement('div'); morseEl.className = 'preview-morse';
         if (info.ctc) morseEl.textContent = info.ctc;
         else if (info.morse) morseEl.textContent = info.morse.replace(/ /g, '/');
@@ -1226,13 +1301,6 @@
         col.appendChild(charEl);
         col.appendChild(morseEl);
         inner.appendChild(col);
-      }
-
-      /* update language indicators */
-      document.querySelectorAll('.lang-tab').forEach(tab => {
-        const lang = tab.dataset.lang;
-        if (lang === 'en') { tab.className = 'lang-tab active'; return; }
-        tab.className = detected.has(lang) ? 'lang-tab detected' : 'lang-tab';
       });
 
       /* show CTC prompt if needed */
@@ -1301,7 +1369,7 @@
       const rulerInner = document.getElementById('rulerInner');
       elRefsH = []; inner.innerHTML = ''; rulerInner.innerHTML = '';
       if (!sequence.length) {
-        inner.innerHTML = '<div class="seq-empty" id="seqEmptyH" style="position:relative;min-height:200px"><div class="seq-empty-morse">· · · — — — · · ·</div><div>Type a phrase above</div></div>';
+        inner.innerHTML = '<div class="seq-empty" id="seqEmptyH" style="position:relative;min-height:200px"><div style="opacity:0.15;color:var(--amber);font-size:14px">type here…</div></div>';
         return;
       }
       const chars = []; let curChar = null, totalUnits = 0;
@@ -1439,8 +1507,8 @@
             playTimeouts = [];
             elRefsV.forEach(r => r.dom.classList.remove('playing'));
             elRefsH.forEach(r => r.dom.classList.remove('playing'));
-            wV.scrollTo({ top: 0, behavior: 'smooth' }); wH.scrollTo({ left: 0, behavior: 'smooth' });
-            setTimeout(() => { if (isPlaying) schedule(); }, 400);
+            wV.scrollTo({ top: 0, behavior: 'instant' }); wH.scrollTo({ left: 0, behavior: 'instant' });
+            setTimeout(() => { if (isPlaying) schedule(); }, 50);
           } else stopPlayback();
         }, time + u * 3));
       }
@@ -1478,12 +1546,35 @@
         renderPreview(inp.value);
         sequence = encode(inp.value);
         renderAll();
+        /* hide ghost when there's content */
+        updateGhostVisibility();
       }
       let tmr = null;
       inp.oninput = () => {
-        autoResize(inp);
-        clearTimeout(tmr); tmr = setTimeout(doEncode, 300);
+        if (!isComposing) {
+          autoResize(inp);
+          clearTimeout(tmr); tmr = setTimeout(doEncode, 300);
+        }
       };
+
+      /* ── IME Composition tracking ── */
+      inp.addEventListener('compositionstart', () => {
+        isComposing = true;
+        lastCompKana = '';
+      });
+      inp.addEventListener('compositionupdate', e => {
+        lastCompKana = e.data || '';
+      });
+      inp.addEventListener('compositionend', e => {
+        isComposing = false;
+        const committed = e.data || '';
+        /* If committed text contains CJK and kana was different, store mapping */
+        if (lastCompKana && committed !== lastCompKana && committed.split('').some(c => isCJK(c))) {
+          imeKanaCache.set(committed, lastCompKana);
+        }
+        autoResize(inp);
+        clearTimeout(tmr); tmr = setTimeout(doEncode, 200);
+      });
 
       document.getElementById('playBtn').onclick = startPlayback;
       document.getElementById('loopBtn').onclick = function () { isLooping = !isLooping; this.classList.toggle('active', isLooping); };
@@ -1518,6 +1609,28 @@
       document.getElementById('ctcDismissBtn').onclick = () => {
         document.getElementById('ctcPrompt').classList.remove('show');
       };
+
+      /* ── Cycling placeholder ghost in DAW ── */
+      const GHOST_PHRASES = ['type here…', '在此输入…', '在此輸入…', 'ここに入力…', '여기에 입력…'];
+      let ghostIdx = 0, ghostFading = false;
+      const ghostElV = document.getElementById('seqEmptyV');
+      const ghostElH = document.getElementById('seqEmptyH');
+
+      function setGhostText(txt) {
+        if (ghostElV) { ghostElV.innerHTML = '<div style="opacity:0.15;color:var(--amber);font-size:14px">' + txt + '</div>'; }
+        if (ghostElH) { ghostElH.innerHTML = '<div style="opacity:0.15;color:var(--amber);font-size:14px">' + txt + '</div>'; }
+      }
+      function cycleGhost() {
+        setGhostText(GHOST_PHRASES[ghostIdx]);
+        ghostIdx = (ghostIdx + 1) % GHOST_PHRASES.length;
+      }
+      function updateGhostVisibility() {
+        const hasContent = inp.value.trim().length > 0;
+        if (ghostElV) ghostElV.style.display = hasContent ? 'none' : 'flex';
+        /* seqEmptyH is rebuilt by renderH, so that handles itself */
+      }
+      cycleGhost();
+      setInterval(cycleGhost, 3000);
 
       if (layoutMode === 'desktop') inp.focus();
     });
