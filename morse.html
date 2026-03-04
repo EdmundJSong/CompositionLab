@@ -5,301 +5,310 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
 <title>Morse Sequencer — Composition Lab</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
-    --bg: #0a0a0a; --surface: #141414; --surface2: #1a1a1a; --surface3: #222;
-    --border: #2a2a2a; --text: #e8e4dd; --text2: #888; --text3: #555;
-    --amber: #d4912a; --amber-dim: rgba(212,145,42,0.15); --amber-glow: rgba(212,145,42,0.4);
-    --dot-color: #d4912a; --dash-color: #c27f1f;
+    --bg: #0a0a0a; --surface: #111; --surface2: #161616; --surface3: #1a1a1a;
+    --border: #222; --border2: #2a2a2a; --text: #e8e4dd; --text2: #888; --text3: #555;
+    --amber: #d4912a; --amber-dim: rgba(212,145,42,0.12); --amber-glow: rgba(212,145,42,0.35);
+    --dot: #d4912a; --dash: #b87a1a;
   }
-
   html, body { height: 100%; overflow: hidden; }
   body {
-    font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text);
+    font-family: 'JetBrains Mono', monospace; background: var(--bg); color: var(--text);
     display: flex; flex-direction: column; position: fixed; inset: 0;
     -webkit-user-select: none; user-select: none;
   }
 
-  /* ── TOP BAR ── */
+  /* ═══ TOP BAR ═══ */
   .top-bar {
     display: flex; align-items: center; gap: 10px;
-    padding: 10px 14px; border-bottom: 1px solid var(--border);
-    flex-shrink: 0; background: var(--surface); z-index: 10;
+    padding: 8px 12px; border-bottom: 1px solid var(--border);
+    background: var(--surface); z-index: 20; flex-shrink: 0;
   }
-  .back-btn {
-    width: 36px; height: 36px; border-radius: 8px; border: 1px solid var(--border);
-    background: var(--surface2); color: var(--text2); font-size: 18px;
-    cursor: pointer; display: flex; align-items: center; justify-content: center;
-    transition: all 0.2s;
+  .back-btn, .layout-toggle {
+    width: 32px; height: 32px; border-radius: 8px;
+    border: 1px solid var(--border); background: var(--surface2);
+    color: var(--text2); font-size: 18px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s; font-family: inherit;
   }
-  .back-btn:hover { border-color: var(--amber); color: var(--amber); }
-  .app-title {
-    font-family: 'JetBrains Mono', monospace; font-weight: 600;
-    font-size: 15px; letter-spacing: 0.5px; color: var(--text);
-  }
+  .back-btn:hover, .layout-toggle:hover { border-color: var(--amber); color: var(--amber); }
+  .layout-toggle { margin-left: auto; font-size: 14px; }
+  .app-title { font-weight: 600; font-size: 14px; letter-spacing: 0.5px; }
   .app-title span { color: var(--amber); }
 
-  /* ── INPUT AREA ── */
-  .input-area {
-    display: flex; gap: 8px; padding: 10px 14px; flex-shrink: 0;
+  /* ═══ INPUT ROW ═══ */
+  .input-row {
+    display: flex; gap: 8px; padding: 8px 12px;
     border-bottom: 1px solid var(--border); background: var(--surface);
+    flex-shrink: 0; align-items: center; flex-wrap: wrap;
   }
   .text-input {
-    flex: 1; padding: 10px 14px; border-radius: 8px;
+    flex: 1; min-width: 120px; padding: 8px 12px; border-radius: 6px;
     border: 1px solid var(--border); background: var(--surface2);
-    color: var(--text); font-family: 'Inter', sans-serif; font-size: 16px;
+    color: var(--text); font-family: inherit; font-size: 15px;
     outline: none; transition: border-color 0.2s;
   }
   .text-input:focus { border-color: var(--amber); }
   .text-input::placeholder { color: var(--text3); }
+  .lang-tabs { display: flex; gap: 3px; flex-shrink: 0; }
+  .lang-tab {
+    padding: 6px 12px; border-radius: 5px; border: 1px solid var(--border);
+    background: transparent; color: var(--text3); font-size: 11px;
+    font-weight: 600; cursor: pointer; transition: all 0.2s; font-family: inherit;
+  }
+  .lang-tab.active { background: var(--amber-dim); border-color: var(--amber); color: var(--amber); }
+  .lang-tab[disabled] { opacity: 0.25; cursor: not-allowed; pointer-events: none; }
   .encode-btn {
-    padding: 10px 20px; border-radius: 8px; border: none;
+    padding: 8px 16px; border-radius: 6px; border: none;
     background: var(--amber); color: #000; font-weight: 600;
-    font-size: 14px; cursor: pointer; white-space: nowrap;
-    transition: all 0.2s; font-family: 'Inter', sans-serif;
+    font-size: 12px; cursor: pointer; font-family: inherit;
+    transition: all 0.2s; letter-spacing: 0.5px;
   }
   .encode-btn:hover { filter: brightness(1.15); }
-  .encode-btn:active { transform: scale(0.97); }
 
-  /* ── LANGUAGE TABS ── */
-  .lang-tabs {
-    display: flex; gap: 4px; padding: 8px 14px; flex-shrink: 0;
+  /* ═══ CONTROL BAR ═══ */
+  .ctrl-bar {
+    display: flex; gap: 10px; padding: 8px 12px;
     border-bottom: 1px solid var(--border); background: var(--surface);
+    align-items: center; flex-shrink: 0; flex-wrap: wrap;
   }
-  .lang-tab {
-    padding: 6px 16px; border-radius: 6px; border: 1px solid var(--border);
-    background: transparent; color: var(--text2); font-size: 12px;
-    font-weight: 600; cursor: pointer; transition: all 0.2s;
-    font-family: 'JetBrains Mono', monospace; letter-spacing: 0.5px;
+  .ctrl-group { display: flex; align-items: center; gap: 4px; }
+  .ctrl-label { font-size: 9px; font-weight: 600; color: var(--text3); letter-spacing: 0.5px; }
+  .bpm-wrap { display: flex; align-items: center; }
+  .bpm-input {
+    width: 48px; padding: 5px 4px; border: 1px solid var(--border);
+    border-radius: 4px 0 0 4px; background: var(--surface2); color: var(--amber);
+    font-family: inherit; font-size: 12px; font-weight: 600;
+    text-align: center; outline: none; -moz-appearance: textfield;
   }
-  .lang-tab.active {
-    background: var(--amber-dim); border-color: var(--amber); color: var(--amber);
+  .bpm-input::-webkit-inner-spin-button, .bpm-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+  .bpm-input:focus { border-color: var(--amber); }
+  .bpm-arrows { display: flex; flex-direction: column; }
+  .bpm-arrow {
+    width: 20px; height: 15px; border: 1px solid var(--border);
+    background: var(--surface2); color: var(--text3); font-size: 8px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s; font-family: inherit; line-height: 1;
   }
-  .lang-tab:not(.active):hover { border-color: var(--text3); color: var(--text); }
-  .lang-tab[disabled] { opacity: 0.3; cursor: not-allowed; pointer-events: none; }
-
-  /* ── SEQUENCER ── */
-  .sequencer-wrap {
-    flex: 1; overflow-y: auto; overflow-x: hidden;
-    position: relative; background: var(--bg);
-    -webkit-overflow-scrolling: touch;
-  }
-  .sequencer {
-    position: relative; width: 100%; min-height: 100%;
-    padding: 16px 14px 80px;
-  }
-  .seq-empty {
-    position: absolute; inset: 0; display: flex;
-    align-items: center; justify-content: center;
-    flex-direction: column; gap: 12px; color: var(--text3);
-    font-size: 14px; pointer-events: none;
-  }
-  .seq-empty-morse {
-    font-family: 'JetBrains Mono', monospace; font-size: 22px;
-    letter-spacing: 3px; color: var(--text3); opacity: 0.35;
-  }
-
-  /* character group */
-  .char-group { display: flex; align-items: flex-start; gap: 0; margin-bottom: 2px; }
-  .char-label {
-    width: 48px; flex-shrink: 0; padding-top: 10px;
-    font-family: 'JetBrains Mono', monospace; font-size: 14px;
-    font-weight: 600; color: var(--text2); text-align: right; padding-right: 12px;
-  }
-  .char-morse {
-    font-family: 'JetBrains Mono', monospace; font-size: 10px;
-    color: var(--text3); margin-top: 2px;
-  }
-  .char-elements {
-    flex: 1; display: flex; flex-direction: column;
-    align-items: stretch; gap: 3px;
-  }
-
-  /* morse element */
-  .morse-el {
-    border-radius: 5px; cursor: pointer; position: relative;
-    transition: opacity 0.15s, filter 0.15s, box-shadow 0.15s;
-    display: flex; align-items: center; justify-content: center;
-    min-height: 44px; touch-action: manipulation;
-  }
-  .morse-el.dot { height: 44px; background: var(--dot-color); }
-  .morse-el.dash { height: 76px; background: var(--dash-color); }
-  .morse-el .vel-label {
-    font-family: 'JetBrains Mono', monospace; font-size: 10px;
-    font-weight: 600; color: rgba(0,0,0,0.5); pointer-events: none;
-  }
-  .morse-el.playing {
-    filter: brightness(1.6) saturate(1.3);
-    box-shadow: 0 0 24px var(--amber-glow), inset 0 0 12px rgba(255,255,255,0.15);
-  }
-  .morse-el[data-vel="0"] { opacity: 0.2; }
-  .morse-el[data-vel="1"] { opacity: 0.45; }
-  .morse-el[data-vel="2"] { opacity: 0.72; }
-  .morse-el[data-vel="3"] { opacity: 1.0; }
-
-  /* word gap */
-  .word-gap {
-    height: 32px; display: flex; align-items: center;
-    padding-left: 48px; margin-bottom: 2px;
-  }
-  .word-gap-line { width: 50px; height: 1px; background: var(--border); }
-  .word-gap-label {
-    font-family: 'JetBrains Mono', monospace; font-size: 9px;
-    color: var(--text3); margin-left: 8px; letter-spacing: 0.5px;
-  }
-
-  .char-gap { height: 14px; margin-bottom: 2px; }
-
-  /* playhead */
-  .playhead {
-    position: absolute; left: 48px; right: 14px; height: 3px;
-    background: var(--amber); border-radius: 2px;
-    box-shadow: 0 0 14px var(--amber-glow);
-    pointer-events: none; z-index: 5; display: none;
-  }
-
-  /* ── CONTROLS ── */
-  .controls {
-    display: flex; flex-wrap: wrap; gap: 10px; padding: 10px 14px;
-    border-top: 1px solid var(--border); background: var(--surface);
-    align-items: center; flex-shrink: 0; z-index: 10;
-  }
-  .ctrl-group { display: flex; align-items: center; gap: 6px; }
-  .ctrl-label {
-    font-family: 'JetBrains Mono', monospace; font-size: 10px;
-    font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px;
-  }
-  .ctrl-val {
-    font-family: 'JetBrains Mono', monospace; font-size: 12px;
-    font-weight: 500; color: var(--amber); min-width: 32px; text-align: center;
-  }
-  .ctrl-slider {
-    -webkit-appearance: none; appearance: none; width: 80px; height: 4px;
-    background: var(--border); border-radius: 2px; outline: none; cursor: pointer;
-  }
-  .ctrl-slider::-webkit-slider-thumb {
-    -webkit-appearance: none; width: 16px; height: 16px;
-    border-radius: 50%; background: var(--amber); cursor: pointer;
-    box-shadow: 0 0 6px var(--amber-glow);
-  }
-  .ctrl-slider::-moz-range-thumb {
-    width: 16px; height: 16px; border-radius: 50%;
-    background: var(--amber); border: none; cursor: pointer;
-  }
+  .bpm-arrow:first-child { border-radius: 0 4px 0 0; border-bottom: none; }
+  .bpm-arrow:last-child { border-radius: 0 0 4px 0; }
+  .bpm-arrow:hover { background: var(--amber-dim); color: var(--amber); border-color: var(--amber); }
   .ctrl-btn {
-    width: 42px; height: 42px; border-radius: 10px;
+    width: 32px; height: 32px; border-radius: 8px;
     border: 1px solid var(--border); background: var(--surface2);
-    color: var(--text2); font-size: 18px; cursor: pointer;
+    color: var(--text2); font-size: 14px; cursor: pointer;
     display: flex; align-items: center; justify-content: center;
-    transition: all 0.2s; flex-shrink: 0;
+    transition: all 0.2s; font-family: inherit;
   }
   .ctrl-btn:hover { border-color: var(--amber); color: var(--amber); }
   .ctrl-btn.active { background: var(--amber-dim); border-color: var(--amber); color: var(--amber); }
-  .ctrl-btn.play-btn {
-    width: 50px; height: 50px; border-radius: 50%;
-    background: var(--amber); border: none; color: #000; font-size: 22px;
+  .play-btn {
+    width: 38px; height: 38px; border-radius: 50%;
+    background: var(--amber); border: none; color: #000;
+    font-size: 16px; cursor: pointer; transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center; font-family: inherit;
   }
-  .ctrl-btn.play-btn:hover { filter: brightness(1.15); }
-  .ctrl-btn.play-btn.playing { background: #c44; }
-
+  .play-btn:hover { filter: brightness(1.15); }
+  .play-btn.playing { background: #c44; }
+  .pitch-select {
+    padding: 5px 6px; border-radius: 5px; border: 1px solid var(--border);
+    background: var(--surface2); color: var(--text);
+    font-family: inherit; font-size: 11px; outline: none; cursor: pointer;
+  }
   .sound-toggle {
-    padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border);
-    background: var(--surface2); color: var(--text2); font-size: 11px;
-    font-weight: 600; cursor: pointer; transition: all 0.2s;
-    font-family: 'JetBrains Mono', monospace;
+    padding: 5px 10px; border-radius: 5px; border: 1px solid var(--border);
+    background: var(--surface2); color: var(--text2); font-size: 10px;
+    font-weight: 600; cursor: pointer; font-family: inherit; transition: all 0.2s;
   }
   .sound-toggle:hover { border-color: var(--text3); }
 
-  .pitch-select {
-    padding: 6px 8px; border-radius: 6px; border: 1px solid var(--border);
-    background: var(--surface2); color: var(--text);
-    font-family: 'JetBrains Mono', monospace; font-size: 12px;
-    outline: none; cursor: pointer;
+  /* ═══ VERTICAL (mobile) ═══ */
+  .seq-v-wrap {
+    flex: 1; overflow-y: auto; overflow-x: hidden;
+    position: relative; background: var(--bg); -webkit-overflow-scrolling: touch;
   }
-  .pitch-select:focus { border-color: var(--amber); }
+  .seq-v { position: relative; padding: 12px 10px 80px; min-height: 100%; }
+  .seq-empty {
+    position: absolute; inset: 0; display: flex;
+    align-items: center; justify-content: center;
+    flex-direction: column; gap: 10px; color: var(--text3);
+    font-size: 13px; pointer-events: none;
+  }
+  .seq-empty-morse { font-size: 20px; letter-spacing: 3px; opacity: 0.3; }
+  .char-group-v { display: flex; align-items: flex-start; margin-bottom: 2px; }
+  .char-label-v {
+    width: 40px; flex-shrink: 0; padding-top: 10px;
+    font-size: 13px; font-weight: 600; color: var(--text2);
+    text-align: right; padding-right: 10px;
+  }
+  .char-morse-v { font-size: 9px; color: var(--text3); margin-top: 2px; }
+  .char-els-v { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+  .mel-v {
+    border-radius: 4px; cursor: pointer; transition: all 0.15s;
+    display: flex; align-items: center; justify-content: center;
+    min-height: 42px; touch-action: manipulation;
+  }
+  .mel-v.dot { height: 42px; background: var(--dot); }
+  .mel-v.dash { height: 72px; background: var(--dash); }
+  .mel-v .vel { font-size: 9px; font-weight: 600; color: rgba(0,0,0,0.45); pointer-events: none; }
+  .mel-v.playing { filter: brightness(1.6) saturate(1.3); box-shadow: 0 0 20px var(--amber-glow); }
+  .mel-v[data-vel="0"] { opacity: 0.2; } .mel-v[data-vel="1"] { opacity: 0.45; }
+  .mel-v[data-vel="2"] { opacity: 0.72; } .mel-v[data-vel="3"] { opacity: 1.0; }
+  .word-gap-v { height: 28px; display: flex; align-items: center; padding-left: 40px; margin-bottom: 2px; }
+  .word-gap-line { width: 40px; height: 1px; background: var(--border); }
+  .word-gap-label { font-size: 8px; color: var(--text3); margin-left: 6px; }
+  .char-gap-v { height: 12px; margin-bottom: 2px; }
+  .playhead-v {
+    position: absolute; left: 40px; right: 10px; height: 2px;
+    background: var(--amber); border-radius: 1px;
+    box-shadow: 0 0 12px var(--amber-glow);
+    pointer-events: none; z-index: 5; display: none;
+  }
+
+  /* ═══ HORIZONTAL DAW (desktop) ═══ */
+  .seq-h-wrap { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--bg); position: relative; }
+  .timeline-ruler {
+    height: 24px; background: var(--surface); border-bottom: 1px solid var(--border);
+    flex-shrink: 0; overflow: hidden; display: flex;
+  }
+  .ruler-pad { width: 80px; flex-shrink: 0; background: var(--surface); border-right: 1px solid var(--border); }
+  .ruler-scroll { flex: 1; overflow: hidden; position: relative; }
+  .ruler-inner { position: relative; height: 100%; }
+  .ruler-mark {
+    position: absolute; top: 0; height: 100%;
+    border-left: 1px solid var(--border2);
+    display: flex; align-items: flex-end; padding: 0 4px 2px;
+    font-size: 8px; color: var(--text3);
+  }
+  .tracks-scroll { flex: 1; overflow: auto; position: relative; -webkit-overflow-scrolling: touch; }
+  .tracks-inner { position: relative; display: flex; flex-direction: column; }
+  .track-row { display: flex; height: 44px; border-bottom: 1px solid #151515; position: relative; }
+  .track-row:nth-child(even) { background: rgba(255,255,255,0.008); }
+  .track-header {
+    width: 80px; flex-shrink: 0; display: flex; align-items: center;
+    padding: 0 8px; font-size: 12px; font-weight: 600; color: var(--text2);
+    background: var(--surface); border-right: 1px solid var(--border);
+    position: sticky; left: 0; z-index: 2;
+  }
+  .track-header-code { font-size: 8px; color: var(--text3); margin-left: 4px; }
+  .track-lane { flex: 1; position: relative; min-width: 0; }
+  .mel-h {
+    position: absolute; top: 4px; height: 36px; border-radius: 3px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: opacity 0.15s, filter 0.15s;
+  }
+  .mel-h.dot { background: var(--dot); }
+  .mel-h.dash { background: var(--dash); }
+  .mel-h .vel { font-size: 8px; font-weight: 600; color: rgba(0,0,0,0.4); pointer-events: none; }
+  .mel-h.playing { filter: brightness(1.6) saturate(1.3); box-shadow: 0 0 16px var(--amber-glow); }
+  .mel-h[data-vel="0"] { opacity: 0.2; } .mel-h[data-vel="1"] { opacity: 0.45; }
+  .mel-h[data-vel="2"] { opacity: 0.72; } .mel-h[data-vel="3"] { opacity: 1.0; }
+  .track-gap { height: 20px; border-bottom: 1px solid #151515; display: flex; }
+  .track-gap-pad { width: 80px; flex-shrink: 0; background: var(--surface); border-right: 1px solid var(--border); position: sticky; left: 0; z-index: 2; }
+  .track-gap-content { flex: 1; display: flex; align-items: center; padding-left: 12px; }
+  .track-gap-line { width: 40px; height: 1px; background: var(--border); }
+  .track-gap-label { font-size: 8px; color: var(--text3); margin-left: 6px; }
+  .grid-line { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--border); opacity: 0.25; pointer-events: none; z-index: 1; }
+  .playhead-h {
+    position: absolute; top: 0; bottom: 0; width: 2px;
+    background: var(--amber); box-shadow: 0 0 10px var(--amber-glow);
+    pointer-events: none; z-index: 10; display: none; left: 80px;
+  }
+
+  /* ═══ LAYOUT SWITCH ═══ */
+  body.layout-mobile .seq-h-wrap { display: none !important; }
+  body.layout-desktop .seq-v-wrap { display: none !important; }
 
   /* scrollbar */
-  .sequencer-wrap::-webkit-scrollbar { width: 4px; }
-  .sequencer-wrap::-webkit-scrollbar-track { background: transparent; }
-  .sequencer-wrap::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  .seq-v-wrap::-webkit-scrollbar, .tracks-scroll::-webkit-scrollbar { width: 4px; height: 4px; }
+  .seq-v-wrap::-webkit-scrollbar-track, .tracks-scroll::-webkit-scrollbar-track { background: transparent; }
+  .seq-v-wrap::-webkit-scrollbar-thumb, .tracks-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
   button:focus, input:focus, select:focus { outline: none; }
-
-  @media (max-width: 600px) {
-    .top-bar { padding: 8px 10px; }
-    .input-area { padding: 8px 10px; }
-    .lang-tabs { padding: 6px 10px; }
-    .sequencer { padding: 12px 8px 60px; }
-    .controls { padding: 8px 10px; gap: 6px; }
-    .ctrl-slider { width: 56px; }
-    .char-label { width: 36px; font-size: 12px; padding-right: 8px; }
-    .morse-el.dot { height: 40px; }
-    .morse-el.dash { height: 68px; }
-  }
 </style>
 </head>
-<body>
+<body class="layout-desktop">
 
   <div class="top-bar">
     <button class="back-btn" onclick="window.location.href='index.html'" title="Home">‹</button>
     <div class="app-title">MORSE<span>SEQ</span></div>
+    <button class="layout-toggle" id="layoutToggle" title="Toggle mobile / desktop">
+      <svg id="layoutIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>
+      </svg>
+    </button>
   </div>
 
-  <div class="input-area">
+  <div class="input-row">
     <input type="text" class="text-input" id="textInput" placeholder="Type a phrase…" autocomplete="off" spellcheck="false">
+    <div class="lang-tabs">
+      <button class="lang-tab active" data-lang="en">EN</button>
+      <button class="lang-tab" data-lang="zh" disabled>中</button>
+      <button class="lang-tab" data-lang="ja" disabled>あ</button>
+      <button class="lang-tab" data-lang="ko" disabled>한</button>
+    </div>
     <button class="encode-btn" id="encodeBtn">ENCODE</button>
   </div>
 
-  <div class="lang-tabs">
-    <button class="lang-tab active" data-lang="en">EN</button>
-    <button class="lang-tab" data-lang="zh" disabled title="Coming soon">ZH</button>
-    <button class="lang-tab" data-lang="ja" disabled title="Coming soon">JA</button>
-    <button class="lang-tab" data-lang="ko" disabled title="Coming soon">KO</button>
-  </div>
-
-  <div class="sequencer-wrap" id="seqWrap">
-    <div class="sequencer" id="sequencer">
-      <div class="seq-empty" id="seqEmpty">
-        <div class="seq-empty-morse">· · · &nbsp; — — — &nbsp; · · ·</div>
-        <div>Type a phrase and hit ENCODE</div>
-      </div>
-      <div class="playhead" id="playhead"></div>
-    </div>
-  </div>
-
-  <div class="controls">
-    <button class="ctrl-btn play-btn" id="playBtn" title="Play / Stop">▶</button>
+  <div class="ctrl-bar">
+    <button class="play-btn" id="playBtn" title="Play / Stop">▶</button>
     <button class="ctrl-btn" id="loopBtn" title="Loop">⟳</button>
-
     <div class="ctrl-group">
       <span class="ctrl-label">BPM</span>
-      <input type="range" class="ctrl-slider" id="bpmSlider" min="40" max="240" value="120">
-      <span class="ctrl-val" id="bpmVal">120</span>
+      <div class="bpm-wrap">
+        <input type="number" class="bpm-input" id="bpmInput" value="120" min="40" max="300">
+        <div class="bpm-arrows">
+          <button class="bpm-arrow" id="bpmUp">▲</button>
+          <button class="bpm-arrow" id="bpmDown">▼</button>
+        </div>
+      </div>
     </div>
-
     <div class="ctrl-group">
       <span class="ctrl-label">NOTE</span>
       <select class="pitch-select" id="pitchSelect">
         <option value="C3">C3</option><option value="D3">D3</option><option value="E3">E3</option>
-        <option value="F3">F3</option><option value="G3">G3</option><option value="A3">A3</option>
-        <option value="B3">B3</option>
+        <option value="F3">F3</option><option value="G3">G3</option><option value="A3">A3</option><option value="B3">B3</option>
         <option value="C4" selected>C4</option><option value="D4">D4</option><option value="E4">E4</option>
-        <option value="F4">F4</option><option value="G4">G4</option><option value="A4">A4</option>
-        <option value="B4">B4</option>
-        <option value="C5">C5</option><option value="D5">D5</option><option value="E5">E5</option>
-        <option value="F5">F5</option><option value="G5">G5</option><option value="A5">A5</option>
+        <option value="F4">F4</option><option value="G4">G4</option><option value="A4">A4</option><option value="B4">B4</option>
+        <option value="C5">C5</option>
       </select>
     </div>
-
     <button class="sound-toggle" id="soundToggle">BEEP</button>
   </div>
 
+  <!-- VERTICAL (mobile) -->
+  <div class="seq-v-wrap" id="seqVWrap">
+    <div class="seq-v" id="seqV">
+      <div class="seq-empty" id="seqEmptyV">
+        <div class="seq-empty-morse">· · · — — — · · ·</div>
+        <div>Type a phrase and hit ENCODE</div>
+      </div>
+      <div class="playhead-v" id="playheadV"></div>
+    </div>
+  </div>
+
+  <!-- HORIZONTAL DAW (desktop) -->
+  <div class="seq-h-wrap" id="seqHWrap">
+    <div class="timeline-ruler" id="ruler">
+      <div class="ruler-pad"></div>
+      <div class="ruler-scroll" id="rulerScroll"><div class="ruler-inner" id="rulerInner"></div></div>
+    </div>
+    <div class="tracks-scroll" id="tracksScroll">
+      <div class="tracks-inner" id="tracksInner">
+        <div class="seq-empty" id="seqEmptyH" style="position:relative;min-height:200px">
+          <div class="seq-empty-morse">· · · — — — · · ·</div>
+          <div>Type a phrase and hit ENCODE</div>
+        </div>
+      </div>
+      <div class="playhead-h" id="playheadH"></div>
+    </div>
+  </div>
+
 <script>
-/* ═══════════════════════════════════════════
-   ITU INTERNATIONAL MORSE
-   ═══════════════════════════════════════════ */
+/* ═══ MORSE ═══ */
 const MORSE = {
   'A':'.-','B':'-...','C':'-.-.','D':'-..','E':'.','F':'..-.','G':'--.',
   'H':'....','I':'..','J':'.---','K':'-.-','L':'.-..','M':'--','N':'-.',
@@ -313,286 +322,280 @@ const MORSE = {
   '$':'...-..-','@':'.--.-.',"'":'.----.'
 };
 
-/* ═══════════════════════════════════════════
-   STATE
-   ═══════════════════════════════════════════ */
-let sequence = [];
-let elRefs = [];       // { dom, item } for playable elements only
-let isPlaying = false;
-let isLooping = false;
-let playTimeouts = [];
-let bpm = 120;
-let pitch = 'C4';
-let soundMode = 'beep';
-const VEL_LABELS = ['pp','mp','f','ff'];
-const VEL_GAINS = [0.1, 0.28, 0.55, 0.9];
+let sequence = [], elRefsV = [], elRefsH = [];
+let isPlaying = false, isLooping = false, playTimeouts = [];
+let bpm = 120, pitch = 'C4', soundMode = 'beep', layoutMode = 'desktop';
+const VEL = ['pp','mp','f','ff'], VEL_G = [0.1, 0.28, 0.55, 0.9];
+const PX_PER_UNIT = 20;
 
-/* ═══════════════════════════════════════════
-   AUDIO
-   ═══════════════════════════════════════════ */
-let audioReady = false;
-async function ensureAudio() {
-  if (audioReady) return;
-  await Tone.start();
-  audioReady = true;
-}
-
-function playTone(durSec, vel) {
-  const gain = VEL_GAINS[vel] * 0.6;
+/* ═══ AUDIO ═══ */
+let audioOk = false;
+async function ensureAudio() { if (!audioOk) { await Tone.start(); audioOk = true; } }
+function playTone(dur, vel) {
+  const g = VEL_G[vel] * 0.6;
   if (soundMode === 'beep') {
-    const synth = new Tone.Synth({
-      oscillator: { type: 'sine' },
-      envelope: { attack: 0.005, decay: 0.05, sustain: 0.8, release: 0.08 }
-    }).toDestination();
-    synth.volume.value = Tone.gainToDb(gain);
-    synth.triggerAttackRelease(pitch, durSec);
-    setTimeout(() => synth.dispose(), (durSec + 0.5) * 1000);
+    const s = new Tone.Synth({ oscillator:{type:'sine'}, envelope:{attack:0.005,decay:0.05,sustain:0.8,release:0.08} }).toDestination();
+    s.volume.value = Tone.gainToDb(g); s.triggerAttackRelease(pitch, dur);
+    setTimeout(() => s.dispose(), (dur + 0.5) * 1000);
   } else {
-    const synth = new Tone.MembraneSynth({
-      pitchDecay: 0.01, octaves: 2, envelope: { attack: 0.001, decay: durSec * 0.9, sustain: 0, release: 0.05 }
-    }).toDestination();
-    synth.volume.value = Tone.gainToDb(gain);
-    synth.triggerAttackRelease(pitch, durSec);
-    setTimeout(() => synth.dispose(), (durSec + 0.5) * 1000);
+    const s = new Tone.MembraneSynth({ pitchDecay:0.01, octaves:2, envelope:{attack:0.001,decay:dur*0.9,sustain:0,release:0.05} }).toDestination();
+    s.volume.value = Tone.gainToDb(g); s.triggerAttackRelease(pitch, dur);
+    setTimeout(() => s.dispose(), (dur + 0.5) * 1000);
   }
 }
 
-/* ═══════════════════════════════════════════
-   ENCODE
-   ═══════════════════════════════════════════ */
+/* ═══ ENCODE ═══ */
 function encode(text) {
-  const upper = text.toUpperCase().trim();
-  if (!upper) return [];
-  const seq = [];
-  const words = upper.split(/\s+/);
-  let charIdx = 0;
-
-  words.forEach((word, wi) => {
-    for (let ci = 0; ci < word.length; ci++) {
-      const ch = word[ci];
-      const code = MORSE[ch];
-      if (!code) { charIdx++; continue; }
-
-      for (let ei = 0; ei < code.length; ei++) {
-        seq.push({
-          type: code[ei] === '.' ? 'dot' : 'dash',
-          char: ch, code: code, charIdx, vel: 3
-        });
-      }
-      charIdx++;
-      if (ci < word.length - 1) seq.push({ type: 'char-gap' });
+  const u = text.toUpperCase().trim(); if (!u) return [];
+  const seq = [], words = u.split(/\s+/); let ci = 0;
+  words.forEach((w, wi) => {
+    for (let i = 0; i < w.length; i++) {
+      const ch = w[i], code = MORSE[ch]; if (!code) { ci++; continue; }
+      for (let e = 0; e < code.length; e++)
+        seq.push({ type: code[e] === '.' ? 'dot' : 'dash', char: ch, code, charIdx: ci, vel: 3 });
+      ci++;
+      if (i < w.length - 1) seq.push({ type: 'char-gap' });
     }
     if (wi < words.length - 1) seq.push({ type: 'word-gap' });
-  });
-  return seq;
+  }); return seq;
 }
 
-/* ═══════════════════════════════════════════
-   RENDER
-   ═══════════════════════════════════════════ */
-function renderSequencer() {
-  const container = document.getElementById('sequencer');
-  const empty = document.getElementById('seqEmpty');
-  const playhead = document.getElementById('playhead');
-  elRefs = [];
+/* ═══ RENDER VERTICAL ═══ */
+function renderV() {
+  const c = document.getElementById('seqV'), empty = document.getElementById('seqEmptyV');
+  elRefsV = [];
+  c.querySelectorAll('.char-group-v,.word-gap-v,.char-gap-v').forEach(e => e.remove());
+  if (!sequence.length) { empty.style.display = 'flex'; return; }
+  empty.style.display = 'none';
+  let cur = -1, grp = null, els = null;
+  sequence.forEach((it, idx) => {
+    if (it.type === 'word-gap') {
+      if (grp) c.appendChild(grp); grp = null; cur = -1;
+      const g = document.createElement('div'); g.className = 'word-gap-v';
+      g.innerHTML = '<div class="word-gap-line"></div><span class="word-gap-label">SPACE</span>';
+      c.appendChild(g); return;
+    }
+    if (it.type === 'char-gap') {
+      if (grp) c.appendChild(grp); grp = null; cur = -1;
+      c.appendChild(Object.assign(document.createElement('div'), { className: 'char-gap-v' })); return;
+    }
+    if (it.charIdx !== cur) {
+      if (grp) c.appendChild(grp);
+      grp = document.createElement('div'); grp.className = 'char-group-v';
+      const lbl = document.createElement('div'); lbl.className = 'char-label-v';
+      lbl.innerHTML = it.char + '<div class="char-morse-v">' + it.code + '</div>';
+      grp.appendChild(lbl);
+      els = document.createElement('div'); els.className = 'char-els-v';
+      grp.appendChild(els); cur = it.charIdx;
+    }
+    const el = document.createElement('div');
+    el.className = 'mel-v ' + it.type; el.dataset.vel = it.vel;
+    el.innerHTML = '<span class="vel">' + VEL[it.vel] + '</span>';
+    el.onclick = () => { it.vel = (it.vel + 1) % 4; el.dataset.vel = it.vel; el.querySelector('.vel').textContent = VEL[it.vel]; syncVel('h', idx, it.vel); };
+    els.appendChild(el); elRefsV.push({ dom: el, item: it, idx });
+  });
+  if (grp) c.appendChild(grp);
+}
 
-  // clear old content
-  container.querySelectorAll('.char-group,.word-gap,.char-gap').forEach(e => e.remove());
-
+/* ═══ RENDER HORIZONTAL ═══ */
+function renderH() {
+  const inner = document.getElementById('tracksInner');
+  const rulerInner = document.getElementById('rulerInner');
+  elRefsH = []; inner.innerHTML = ''; rulerInner.innerHTML = '';
   if (!sequence.length) {
-    empty.style.display = 'flex';
-    playhead.style.display = 'none';
+    inner.innerHTML = '<div class="seq-empty" id="seqEmptyH" style="position:relative;min-height:200px"><div class="seq-empty-morse">· · · — — — · · ·</div><div>Type a phrase and hit ENCODE</div></div>';
     return;
   }
-  empty.style.display = 'none';
-
-  let curCharIdx = -1, group = null, elContainer = null;
-
-  sequence.forEach((item, idx) => {
-    if (item.type === 'word-gap') {
-      if (group) { container.appendChild(group); group = null; curCharIdx = -1; }
-      const g = document.createElement('div');
-      g.className = 'word-gap';
-      g.innerHTML = '<div class="word-gap-line"></div><span class="word-gap-label">SPACE</span>';
-      container.appendChild(g);
-      return;
-    }
-    if (item.type === 'char-gap') {
-      if (group) { container.appendChild(group); group = null; curCharIdx = -1; }
-      const g = document.createElement('div');
-      g.className = 'char-gap';
-      container.appendChild(g);
-      return;
-    }
-
-    // dot or dash
-    if (item.charIdx !== curCharIdx) {
-      if (group) container.appendChild(group);
-      group = document.createElement('div');
-      group.className = 'char-group';
-
-      const labelWrap = document.createElement('div');
-      labelWrap.className = 'char-label';
-      labelWrap.innerHTML = item.char + '<div class="char-morse">' + item.code + '</div>';
-      group.appendChild(labelWrap);
-
-      elContainer = document.createElement('div');
-      elContainer.className = 'char-elements';
-      group.appendChild(elContainer);
-      curCharIdx = item.charIdx;
-    }
-
-    const el = document.createElement('div');
-    el.className = 'morse-el ' + item.type;
-    el.dataset.vel = item.vel;
-    el.innerHTML = '<span class="vel-label">' + VEL_LABELS[item.vel] + '</span>';
-
-    el.addEventListener('click', () => {
-      item.vel = (item.vel + 1) % 4;
-      el.dataset.vel = item.vel;
-      el.querySelector('.vel-label').textContent = VEL_LABELS[item.vel];
-    });
-
-    elContainer.appendChild(el);
-    elRefs.push({ dom: el, item });
+  const chars = []; let curChar = null, totalUnits = 0;
+  sequence.forEach((it, idx) => {
+    if (it.type === 'dot' || it.type === 'dash') {
+      if (!curChar || it.charIdx !== curChar.charIdx) {
+        curChar = { char: it.char, code: it.code, charIdx: it.charIdx, elements: [] };
+        chars.push(curChar);
+      }
+      const units = it.type === 'dot' ? 1 : 3;
+      curChar.elements.push({ type: it.type, units, startUnit: totalUnits, item: it, idx });
+      totalUnits += units + 1;
+    } else if (it.type === 'char-gap') { totalUnits += 2; }
+      else if (it.type === 'word-gap') { totalUnits += 6; chars.push({ type: 'gap' }); }
   });
 
-  if (group) container.appendChild(group);
+  const totalW = totalUnits * PX_PER_UNIT + 120;
+  inner.style.width = totalW + 'px';
+  rulerInner.style.width = totalW + 'px';
+
+  // ruler
+  for (let u = 0; u <= totalUnits; u += 10) {
+    const m = document.createElement('div'); m.className = 'ruler-mark';
+    m.style.left = u * PX_PER_UNIT + 'px'; m.textContent = u;
+    rulerInner.appendChild(m);
+  }
+
+  const gridPos = [];
+  for (let u = 0; u <= totalUnits; u += 10) gridPos.push(u * PX_PER_UNIT);
+
+  chars.forEach(ch => {
+    if (ch.type === 'gap') {
+      const gap = document.createElement('div'); gap.className = 'track-gap';
+      gap.innerHTML = '<div class="track-gap-pad"></div><div class="track-gap-content"><div class="track-gap-line"></div><span class="track-gap-label">SPACE</span></div>';
+      inner.appendChild(gap); return;
+    }
+    const row = document.createElement('div'); row.className = 'track-row';
+    const hdr = document.createElement('div'); hdr.className = 'track-header';
+    hdr.innerHTML = ch.char + '<span class="track-header-code">' + ch.code + '</span>';
+    row.appendChild(hdr);
+    const lane = document.createElement('div'); lane.className = 'track-lane';
+    lane.style.width = totalW + 'px';
+
+    gridPos.forEach(px => {
+      const gl = document.createElement('div'); gl.className = 'grid-line'; gl.style.left = px + 'px'; lane.appendChild(gl);
+    });
+
+    ch.elements.forEach(e => {
+      const el = document.createElement('div');
+      el.className = 'mel-h ' + e.type; el.dataset.vel = e.item.vel;
+      el.style.left = e.startUnit * PX_PER_UNIT + 'px';
+      el.style.width = (e.units * PX_PER_UNIT - 2) + 'px';
+      el.innerHTML = '<span class="vel">' + VEL[e.item.vel] + '</span>';
+      el.onclick = () => { e.item.vel = (e.item.vel + 1) % 4; el.dataset.vel = e.item.vel; el.querySelector('.vel').textContent = VEL[e.item.vel]; syncVel('v', e.idx, e.item.vel); };
+      lane.appendChild(el);
+      elRefsH.push({ dom: el, item: e.item, idx: e.idx, startUnit: e.startUnit, units: e.units });
+    });
+    row.appendChild(lane); inner.appendChild(row);
+  });
+
+  // sync ruler scroll with tracks scroll
+  const ts = document.getElementById('tracksScroll');
+  const rs = document.getElementById('rulerScroll');
+  ts.onscroll = () => { rs.scrollLeft = ts.scrollLeft; };
 }
 
-/* ═══════════════════════════════════════════
-   PLAYBACK
-   ═══════════════════════════════════════════ */
-function unitMs() { return 60000 / (bpm * 10); }
+function syncVel(target, idx, vel) {
+  const arr = target === 'v' ? elRefsV : elRefsH;
+  const ref = arr.find(r => r.idx === idx);
+  if (ref) { ref.dom.dataset.vel = vel; ref.dom.querySelector('.vel').textContent = VEL[vel]; }
+}
+function renderAll() { renderV(); renderH(); }
 
+/* ═══ PLAYBACK ═══ */
+function unitMs() { return 60000 / (bpm * 10); }
 function stopPlayback() {
   isPlaying = false;
-  playTimeouts.forEach(t => clearTimeout(t));
-  playTimeouts = [];
-  elRefs.forEach(r => r.dom.classList.remove('playing'));
+  playTimeouts.forEach(t => clearTimeout(t)); playTimeouts = [];
+  elRefsV.forEach(r => r.dom.classList.remove('playing'));
+  elRefsH.forEach(r => r.dom.classList.remove('playing'));
   document.getElementById('playBtn').textContent = '▶';
   document.getElementById('playBtn').classList.remove('playing');
-  document.getElementById('playhead').style.display = 'none';
+  document.getElementById('playheadV').style.display = 'none';
+  document.getElementById('playheadH').style.display = 'none';
 }
 
 async function startPlayback() {
-  await ensureAudio();
-  if (!sequence.length) return;
+  await ensureAudio(); if (!sequence.length) return;
   if (isPlaying) { stopPlayback(); return; }
-
   isPlaying = true;
-  const btn = document.getElementById('playBtn');
-  btn.textContent = '■';
-  btn.classList.add('playing');
-
-  const playhead = document.getElementById('playhead');
-  const wrap = document.getElementById('seqWrap');
-  playhead.style.display = 'block';
-  wrap.scrollTop = 0;
+  document.getElementById('playBtn').textContent = '■';
+  document.getElementById('playBtn').classList.add('playing');
+  const phV = document.getElementById('playheadV'), wV = document.getElementById('seqVWrap');
+  const phH = document.getElementById('playheadH'), wH = document.getElementById('tracksScroll');
+  phV.style.display = 'block'; phH.style.display = 'block';
+  wV.scrollTop = 0; wH.scrollLeft = 0;
 
   function schedule() {
-    const u = unitMs();
-    let time = 0;
-    let eIdx = 0;
-
-    sequence.forEach(item => {
-      if (item.type === 'dot' || item.type === 'dash') {
-        const units = item.type === 'dot' ? 1 : 3;
-        const durSec = (u * units) / 1000;
-        const t = time;
-        const capturedIdx = eIdx;
-
+    const u = unitMs(); let time = 0, eV = 0, eH = 0;
+    sequence.forEach(it => {
+      if (it.type === 'dot' || it.type === 'dash') {
+        const units = it.type === 'dot' ? 1 : 3;
+        const dur = (u * units) / 1000, t = time, cV = eV, cH = eH;
         playTimeouts.push(setTimeout(() => {
           if (!isPlaying) return;
-          playTone(durSec, item.vel);
-          const ref = elRefs[capturedIdx];
-          if (ref) {
-            ref.dom.classList.add('playing');
-            // move playhead
-            const elRect = ref.dom.getBoundingClientRect();
-            const wrapRect = wrap.getBoundingClientRect();
-            const y = elRect.top - wrapRect.top + wrap.scrollTop + elRect.height / 2;
-            playhead.style.top = y + 'px';
-            // auto-scroll
-            const visTop = wrap.scrollTop;
-            const visBot = visTop + wrap.clientHeight;
-            if (y > visBot - 80 || y < visTop + 40) {
-              wrap.scrollTo({ top: y - wrap.clientHeight / 3, behavior: 'smooth' });
-            }
+          playTone(dur, it.vel);
+          const rv = elRefsV[cV]; if (rv) {
+            rv.dom.classList.add('playing');
+            const er = rv.dom.getBoundingClientRect(), wr = wV.getBoundingClientRect();
+            const y = er.top - wr.top + wV.scrollTop + er.height / 2;
+            phV.style.top = y + 'px';
+            if (y > wV.scrollTop + wV.clientHeight - 80 || y < wV.scrollTop + 40)
+              wV.scrollTo({ top: y - wV.clientHeight / 3, behavior: 'smooth' });
           }
-          setTimeout(() => {
-            if (ref) ref.dom.classList.remove('playing');
-          }, u * units * 0.85);
+          const rh = elRefsH[cH]; if (rh) {
+            rh.dom.classList.add('playing');
+            const px = rh.startUnit * PX_PER_UNIT;
+            phH.style.left = (80 + px) + 'px';
+            if (px > wH.scrollLeft + wH.clientWidth - 150 || px < wH.scrollLeft)
+              wH.scrollTo({ left: px - 100, behavior: 'smooth' });
+          }
+          setTimeout(() => { if (rv) rv.dom.classList.remove('playing'); if (rh) rh.dom.classList.remove('playing'); }, u * units * 0.85);
         }, t));
-
-        time += u * (units + 1); // element + inter-element gap
-        eIdx++;
-      }
-      else if (item.type === 'char-gap') { time += u * 2; } // +2 on top of trailing 1 = 3 total
-      else if (item.type === 'word-gap') { time += u * 6; } // +6 on top of trailing 1 = 7 total
+        time += u * (units + 1); eV++; eH++;
+      } else if (it.type === 'char-gap') time += u * 2;
+        else if (it.type === 'word-gap') time += u * 6;
     });
-
     playTimeouts.push(setTimeout(() => {
       if (!isPlaying) return;
       if (isLooping) {
         playTimeouts = [];
-        elRefs.forEach(r => r.dom.classList.remove('playing'));
-        wrap.scrollTo({ top: 0, behavior: 'smooth' });
+        elRefsV.forEach(r => r.dom.classList.remove('playing'));
+        elRefsH.forEach(r => r.dom.classList.remove('playing'));
+        wV.scrollTo({ top: 0, behavior: 'smooth' }); wH.scrollTo({ left: 0, behavior: 'smooth' });
         setTimeout(() => { if (isPlaying) schedule(); }, 400);
-      } else {
-        stopPlayback();
-      }
+      } else stopPlayback();
     }, time + u * 3));
   }
-
   schedule();
 }
 
-/* ═══════════════════════════════════════════
-   WIRING
-   ═══════════════════════════════════════════ */
+/* ═══ LAYOUT ═══ */
+function setLayout(m) {
+  layoutMode = m;
+  document.body.className = 'layout-' + m;
+  const icon = document.getElementById('layoutIcon');
+  if (m === 'desktop') icon.innerHTML = '<rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>';
+  else icon.innerHTML = '<rect x="5" y="1" width="14" height="22" rx="3"/><circle cx="12" cy="19" r="1" fill="currentColor" stroke="none"/>';
+}
+
+function setBpm(v) { bpm = Math.max(40, Math.min(300, Math.round(v))); document.getElementById('bpmInput').value = bpm; }
+
+/* ═══ INIT ═══ */
 document.addEventListener('DOMContentLoaded', () => {
-  const textInput = document.getElementById('textInput');
-  const encodeBtn = document.getElementById('encodeBtn');
+  const params = new URLSearchParams(window.location.search);
+  const viewPref = params.get('view');
+  if (viewPref === 'mobile' || viewPref === 'desktop') setLayout(viewPref);
+  else setLayout(window.innerWidth > 768 ? 'desktop' : 'mobile');
+  document.getElementById('layoutToggle').onclick = () => setLayout(layoutMode === 'desktop' ? 'mobile' : 'desktop');
 
-  function doEncode() {
-    stopPlayback();
-    sequence = encode(textInput.value);
-    renderSequencer();
-  }
+  const inp = document.getElementById('textInput');
+  function doEncode() { stopPlayback(); sequence = encode(inp.value); renderAll(); }
+  document.getElementById('encodeBtn').onclick = doEncode;
+  inp.onkeydown = e => { if (e.key === 'Enter') doEncode(); };
+  let tmr = null;
+  inp.oninput = () => { clearTimeout(tmr); tmr = setTimeout(doEncode, 350); };
 
-  encodeBtn.addEventListener('click', doEncode);
-  textInput.addEventListener('keydown', e => { if (e.key === 'Enter') doEncode(); });
+  document.getElementById('playBtn').onclick = startPlayback;
+  document.getElementById('loopBtn').onclick = function() { isLooping = !isLooping; this.classList.toggle('active', isLooping); };
 
-  let timer = null;
-  textInput.addEventListener('input', () => {
-    clearTimeout(timer);
-    timer = setTimeout(doEncode, 350);
+  const bpmInp = document.getElementById('bpmInput');
+  bpmInp.oninput = () => setBpm(parseInt(bpmInp.value) || 120);
+  document.getElementById('bpmUp').onclick = () => setBpm(bpm + 1);
+  document.getElementById('bpmDown').onclick = () => setBpm(bpm - 1);
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowUp' && document.activeElement !== inp) { e.preventDefault(); setBpm(bpm + (e.shiftKey ? 10 : 1)); }
+    if (e.key === 'ArrowDown' && document.activeElement !== inp) { e.preventDefault(); setBpm(bpm - (e.shiftKey ? 10 : 1)); }
+    if (e.key === ' ' && document.activeElement !== inp) { e.preventDefault(); startPlayback(); }
   });
 
-  document.getElementById('playBtn').addEventListener('click', startPlayback);
-
-  document.getElementById('loopBtn').addEventListener('click', function() {
-    isLooping = !isLooping;
-    this.classList.toggle('active', isLooping);
-  });
-
-  document.getElementById('bpmSlider').addEventListener('input', function() {
-    bpm = parseInt(this.value);
-    document.getElementById('bpmVal').textContent = bpm;
-  });
-
-  document.getElementById('pitchSelect').addEventListener('change', function() {
-    pitch = this.value;
-  });
-
-  document.getElementById('soundToggle').addEventListener('click', function() {
+  document.getElementById('pitchSelect').onchange = function() { pitch = this.value; };
+  document.getElementById('soundToggle').onclick = function() {
     soundMode = soundMode === 'beep' ? 'perc' : 'beep';
     this.textContent = soundMode === 'beep' ? 'BEEP' : 'PERC';
+  };
+
+  document.querySelectorAll('.lang-tab:not([disabled])').forEach(t => {
+    t.onclick = () => { document.querySelectorAll('.lang-tab').forEach(x => x.classList.remove('active')); t.classList.add('active'); };
   });
 
-  // initial focus on mobile
-  if (window.innerWidth > 600) textInput.focus();
+  if (layoutMode === 'desktop') inp.focus();
 });
 </script>
 </body>
