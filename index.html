@@ -278,14 +278,14 @@
         <span class="menu-arrow">›</span>
       </a>
 
-      <div class="menu-item disabled">
+      <a class="menu-item" href="braille.html" id="linkBraille">
         <div class="menu-icon">⠃</div>
         <div class="menu-text-block">
-          <span class="menu-label">BRAILLE SEQ</span>
-          <span class="menu-desc">Tactile step-sequencing interface</span>
+          <span class="menu-label">SONIC BRAILLE</span>
+          <span class="menu-desc">Turn text into pitch sequences via Braille cells</span>
         </div>
-        <span class="menu-badge">COMING SOON</span>
-      </div>
+        <span class="menu-arrow">›</span>
+      </a>
     </nav>
 
     <div class="footer">EDMUND SONG</div>
@@ -316,6 +316,7 @@
       const suffix = viewPref === 'auto' ? '' : '?view=' + viewPref;
       document.getElementById('linkTonnetz').href = 'tonnetz.html' + suffix;
       document.getElementById('linkMorse').href = 'morse.html' + suffix;
+      document.getElementById('linkBraille').href = 'braille.html' + suffix;
     }
 
     document.getElementById('viewToggle').onclick = () => {
