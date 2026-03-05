@@ -6,7 +6,8 @@
   <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
   <title>Composition Lab</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
     rel="stylesheet">
   <style>
     *,
@@ -17,6 +18,19 @@
       padding: 0;
     }
 
+    :root {
+      --bg: #0a0a0a;
+      --surface: #111;
+      --surface2: #161616;
+      --border: #222;
+      --text: #e8e4dd;
+      --text2: #888;
+      --text3: #555;
+      --amber: #d4912a;
+      --amber-dim: rgba(212, 145, 42, 0.12);
+      --amber-glow: rgba(212, 145, 42, 0.35);
+    }
+
     html,
     body {
       height: 100%;
@@ -24,9 +38,9 @@
     }
 
     body {
-      background: #0a0a0a;
-      color: #e8e4dd;
-      font-family: 'JetBrains Mono', monospace;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -37,18 +51,20 @@
       user-select: none;
     }
 
-    /* subtle lattice bg * removed for minimalism * /
-  /* 
-  body::before {
-    content: ''; position: absolute; inset: 0; opacity: 0.04;
-    background-image:
-      linear-gradient(60deg, #d4912a 1px, transparent 1px),
-      linear-gradient(-60deg, #d4912a 1px, transparent 1px),
-      linear-gradient(0deg, #d4912a 1px, transparent 1px);
-    background-size: 40px 69px;
-    pointer-events: none;
-  }
-  */
+    /* Subtle background glow effect */
+    body::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 600px;
+      height: 600px;
+      transform: translate(-50%, -50%);
+      background: radial-gradient(circle, var(--amber-dim) 0%, transparent 60%);
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.5;
+    }
 
     .container {
       display: flex;
@@ -63,28 +79,43 @@
     }
 
     .title {
+      font-family: 'JetBrains Mono', monospace;
       font-weight: 700;
-      font-size: clamp(20px, 5vw, 32px);
-      letter-spacing: 3px;
+      font-size: clamp(24px, 6vw, 36px);
+      letter-spacing: 4px;
       text-align: center;
-      color: #e8e4dd;
-      /* removed gradient for solid professional look */
+      color: var(--text);
       text-shadow: 0 2px 10px rgba(232, 228, 221, 0.1);
+      position: relative;
+      display: inline-block;
+    }
+
+    .title::after {
+      content: '';
+      position: absolute;
+      bottom: -10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 40px;
+      height: 2px;
+      background: var(--amber);
+      border-radius: 1px;
+      box-shadow: 0 0 10px var(--amber-glow);
     }
 
     .title-desc {
       font-size: 13px;
       font-weight: 400;
-      color: #888;
+      color: var(--text2);
       text-align: center;
-      margin-top: -30px;
+      margin-top: -24px;
       letter-spacing: 0.5px;
     }
 
     .menu {
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 12px;
       width: 100%;
     }
 
@@ -92,149 +123,151 @@
       display: flex;
       align-items: center;
       gap: 16px;
-      padding: 16px 20px;
-      background: #141414;
-      /* slightly warmer dark */
-      border: 1px solid #222;
-      border-radius: 8px;
-      /* consistent soft corners */
+      padding: 18px 20px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
       cursor: pointer;
-      transition: all 0.2s ease;
+      transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
       text-decoration: none;
-      color: #e8e4dd;
+      color: var(--text);
       position: relative;
       overflow: hidden;
     }
 
-    /* Remove adjacent border radius rules since we have gaps now */
-    /* .menu-item:first-child { border-radius: 12px 12px 0 0; } */
-    /* .menu-item:last-child { border-radius: 0 0 12px 12px; } */
+    .menu-item::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 3px;
+      height: 100%;
+      background: var(--amber);
+      transform: scaleY(0);
+      transform-origin: bottom;
+      transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+      box-shadow: 0 0 10px var(--amber-glow);
+    }
 
     .menu-item:hover {
-      background: #1a1a1a;
+      background: var(--surface);
       border-color: rgba(212, 145, 42, 0.4);
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    }
+
+    .menu-item:hover::before {
+      transform: scaleY(1);
     }
 
     .menu-item:active {
-      transform: scale(0.99) translateY(0);
-    }
-
-    .menu-item.disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-      pointer-events: none;
+      transform: scale(0.98) translateY(0);
     }
 
     .menu-icon {
-      width: 36px;
-      height: 36px;
+      width: 40px;
+      height: 40px;
       flex-shrink: 0;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 16px;
-      color: #777;
-      background: #0a0a0a;
-      border-radius: 6px;
-      border: 1px solid #1a1a1a;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text2);
+      background: var(--bg);
+      border-radius: 8px;
+      border: 1px solid var(--border);
       transition: all 0.2s ease;
     }
 
     .menu-item:hover .menu-icon {
-      border-color: rgba(212, 145, 42, 0.3);
-      color: #d4912a;
-      box-shadow: 0 0 8px rgba(212, 145, 42, 0.1);
+      border-color: var(--amber);
+      color: var(--amber);
+      background: var(--amber-dim);
+      box-shadow: 0 0 12px var(--amber-glow);
     }
 
     .menu-icon svg {
-      width: 18px;
-      height: 18px;
+      width: 20px;
+      height: 20px;
       fill: currentColor;
     }
 
     .menu-text-block {
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: 6px;
       flex-grow: 1;
     }
 
     .menu-label {
-      font-size: 14px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 15px;
       font-weight: 600;
       letter-spacing: 1px;
     }
 
     .menu-desc {
-      font-size: 11px;
+      font-size: 12px;
       font-weight: 400;
-      color: #777;
+      color: var(--text2);
       letter-spacing: 0.3px;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
 
-    .menu-badge {
-      margin-left: auto;
-      font-size: 9px;
-      font-weight: 600;
-      letter-spacing: 0.5px;
-      color: rgba(212, 145, 42, 0.8);
-      padding: 4px 8px;
-      border-radius: 4px;
-      border: 1px solid rgba(212, 145, 42, 0.2);
-      background: rgba(212, 145, 42, 0.05);
-    }
-
     .menu-arrow {
       margin-left: auto;
-      color: #444;
-      font-size: 18px;
-      transition: all 0.2s ease;
+      color: var(--text3);
+      font-size: 20px;
+      font-weight: 300;
+      transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
       transform: translateX(0);
     }
 
     .menu-item:hover .menu-arrow {
-      color: #d4912a;
-      transform: translateX(2px);
+      color: var(--amber);
+      transform: translateX(4px);
     }
 
     .footer {
-      font-size: 12px;
-      font-weight: 400;
-      letter-spacing: 2px;
-      color: #555;
-      margin-top: 10px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 3px;
+      color: var(--text3);
+      margin-top: 20px;
+      text-transform: uppercase;
+      position: relative;
     }
 
     /* view toggle */
     .view-toggle {
       position: fixed;
-      bottom: 20px;
-      right: 20px;
+      bottom: 24px;
+      right: 24px;
       z-index: 100;
-      /* Moved to bottom for cleaner header */
-      width: 36px;
-      height: 36px;
-      border-radius: 6px;
-      border: 1px solid #222;
-      background: #111;
-      color: #666;
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--text2);
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: all 0.2s ease;
+      transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
     }
 
     .view-toggle:hover {
-      border-color: #d4912a;
-      color: #d4912a;
-      background: #141414;
+      border-color: var(--amber);
+      color: var(--amber);
+      background: var(--surface);
       transform: translateY(-2px);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
     }
 
     .view-toggle:active {
@@ -245,6 +278,11 @@
       width: 18px;
       height: 18px;
       fill: currentColor;
+      transition: transform 0.2s;
+    }
+
+    .view-toggle:hover svg {
+      transform: scale(1.1);
     }
   </style>
 </head>
@@ -264,7 +302,7 @@
         </div>
         <div class="menu-text-block">
           <span class="menu-label">TONNETZ ROW</span>
-          <span class="menu-desc">Generate melodies via harmonic geometry</span>
+          <span class="menu-desc">Tone rows from harmonic geometry</span>
         </div>
         <span class="menu-arrow">›</span>
       </a>
@@ -273,16 +311,16 @@
         <div class="menu-icon">·—</div>
         <div class="menu-text-block">
           <span class="menu-label">MORSE SEQ</span>
-          <span class="menu-desc">Turn text phrases into rhythmic patterns</span>
+          <span class="menu-desc">Rhythmic patterns from text</span>
         </div>
         <span class="menu-arrow">›</span>
       </a>
 
       <a class="menu-item" href="braille.html" id="linkBraille">
-        <div class="menu-icon">⠃</div>
+        <div class="menu-icon">⠿</div>
         <div class="menu-text-block">
           <span class="menu-label">SONIC BRAILLE</span>
-          <span class="menu-desc">Turn text into pitch sequences via Braille cells</span>
+          <span class="menu-desc">Pitch sequences from Braille cells</span>
         </div>
         <span class="menu-arrow">›</span>
       </a>
