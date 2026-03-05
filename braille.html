@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+  <title>Sonic Braille — Composition Lab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+  <style>
+    *,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+    :root {
+      --bg:#0a0a0a; --surface:#111; --surface2:#161616; --surface3:#1a1a1a;
+      --border:#222; --border2:#2a2a2a; --text:#e8e4dd; --text2:#888; --text3:#555;
+      --amber:#d4912a; --amber-dim:rgba(212,145,42,0.12); --amber-glow:rgba(212,145,42,0.35);
+    }
+    html,body { height:100%; overflow:hidden; }
+    body { font-family:'JetBrains Mono',monospace; background:var(--bg); color:var(--text);
+      display:flex; flex-direction:column; position:fixed; inset:0; -webkit-user-select:none; user-select:none; }
+
+    /* ═══ TOP BAR ═══ */
+    .top-bar { display:flex; align-items:center; gap:10px; padding:8px 12px;
+      border-bottom:1px solid var(--border); background:var(--surface); z-index:20; flex-shrink:0; }
+    .back-btn,.layout-toggle { width:32px; height:32px; border-radius:8px; border:1px solid var(--border);
+      background:var(--surface2); color:var(--text2); font-size:18px; cursor:pointer;
+      display:flex; align-items:center; justify-content:center; transition:all 0.2s; font-family:inherit; }
+    .back-btn:hover,.layout-toggle:hover { border-color:var(--amber); color:var(--amber); }
+    .layout-toggle { margin-left:auto; font-size:14px; }
+    .app-title { font-weight:600; font-size:14px; letter-spacing:0.5px; cursor:pointer; }
+    .app-title span { color:var(--amber); }
+
+    /* ═══ INPUT ROW ═══ */
+    .input-row { display:flex; gap:8px; padding:8px 12px; border-bottom:1px solid var(--border);
+      background:var(--surface); flex-shrink:0; align-items:center; flex-wrap:wrap; }
+    .text-input { flex:1; min-width:120px; padding:8px 12px; border-radius:6px; border:1px solid var(--border);
+      background:var(--surface2); color:var(--text); font-family:inherit; font-size:15px; outline:none;
+      transition:border-color 0.2s; resize:none; line-height:1.5; min-height:38px; max-height:100px; overflow-y:auto; }
+    .text-input:focus { border-color:var(--amber); }
+    .text-input::placeholder { color:var(--text3); }
+
+    /* ═══ PREVIEW ═══ */
+    .preview-wrap { display:none; padding:8px 12px; border-bottom:1px solid var(--border);
+      background:var(--surface); flex-shrink:0; overflow-x:auto; }
+    .preview-wrap.has-content { display:block; }
+    .preview-inner { display:flex; gap:6px; min-height:56px; align-items:flex-start; }
+    .preview-col { display:flex; flex-direction:column; align-items:center; gap:2px; min-width:32px; }
+    .preview-char { font-size:11px; color:var(--text2); }
+    .preview-cell { font-size:24px; color:var(--text); line-height:1; }
+    .preview-pitch { font-size:10px; color:var(--amber); font-weight:600; }
+    .preview-math { font-size:8px; color:var(--text3); max-width:80px; text-align:center; word-break:break-all; }
+    .preview-space { width:12px; }
+    .math-toggle { padding:4px 8px; border-radius:4px; border:1px solid var(--border); background:transparent;
+      color:var(--text3); font-size:10px; cursor:pointer; font-family:inherit; transition:all 0.2s; flex-shrink:0; }
+    .math-toggle.active { background:var(--amber-dim); border-color:var(--amber); color:var(--amber); }
+
+    /* ═══ SCALE CONTROLS ═══ */
+    .scale-bar { display:flex; gap:6px; padding:6px 12px; border-bottom:1px solid var(--border);
+      background:var(--surface); flex-shrink:0; align-items:center; flex-wrap:wrap; overflow-x:auto; }
+    .pc-btn { width:28px; height:24px; border-radius:4px; border:1px solid var(--border); background:transparent;
+      color:var(--text3); font-size:9px; cursor:pointer; font-family:inherit; transition:all 0.15s; padding:0; }
+    .pc-btn.active { background:var(--amber-dim); border-color:var(--amber); color:var(--amber); }
+    .pc-btn.black { background:#0d0d0d; }
+    .pc-btn.black.active { background:rgba(212,145,42,0.2); }
+    .scale-sep { width:1px; height:20px; background:var(--border); flex-shrink:0; }
+    .scale-select { border:1px solid var(--border); border-radius:4px; padding:2px 4px; background:var(--surface2);
+      color:var(--text2); font-family:inherit; font-size:9px; cursor:pointer; outline:none; }
+    .oct-group { display:flex; align-items:center; gap:3px; }
+    .oct-label { font-size:9px; color:var(--text3); }
+    .oct-input { width:32px; border:1px solid var(--border); border-radius:4px; padding:2px; background:var(--surface2);
+      color:var(--text); font-family:inherit; font-size:10px; text-align:center; outline:none; -moz-appearance:textfield; }
+    .oct-input::-webkit-inner-spin-button,.oct-input::-webkit-outer-spin-button { -webkit-appearance:none; margin:0; }
+    .scale-name { font-size:9px; color:var(--amber); font-weight:500; margin-left:auto; white-space:nowrap; }
+
+    /* ═══ CTRL BAR ═══ */
+    .ctrl-bar { display:flex; align-items:center; gap:8px; padding:6px 12px;
+      border-bottom:1px solid var(--border); background:var(--surface); flex-shrink:0; }
+    .play-btn { width:36px; height:36px; border-radius:50%; border:2px solid var(--amber);
+      background:transparent; color:var(--amber); cursor:pointer; display:flex; align-items:center;
+      justify-content:center; transition:all 0.2s; position:relative; }
+    .play-btn:hover { background:var(--amber-dim); }
+    .play-btn svg { width:16px; height:16px; fill:currentColor; }
+    .play-btn .icon-stop { display:none; }
+    body.playing .play-btn .icon-play { display:none; }
+    body.playing .play-btn .icon-stop { display:block; }
+    .ctrl-btn { height:28px; padding:0 10px; border-radius:6px; border:1px solid var(--border);
+      background:transparent; color:var(--text2); font-size:14px; cursor:pointer; font-family:inherit; transition:all 0.15s; }
+    .ctrl-btn:hover { border-color:var(--amber); color:var(--amber); }
+    .ctrl-btn.active { background:var(--amber-dim); border-color:var(--amber); color:var(--amber); }
+    .ctrl-group { display:flex; align-items:center; gap:4px; }
+    .ctrl-label { font-size:9px; color:var(--text3); letter-spacing:0.5px; }
+    .bpm-wrap { display:flex; align-items:center; }
+    .bpm-input { width:42px; height:28px; border:1px solid var(--border); border-radius:6px 0 0 6px;
+      background:var(--surface2); color:var(--text); text-align:center; font-family:inherit; font-size:12px;
+      outline:none; -moz-appearance:textfield; }
+    .bpm-input::-webkit-inner-spin-button,.bpm-input::-webkit-outer-spin-button { -webkit-appearance:none; }
+    .bpm-arrows { display:flex; flex-direction:column; }
+    .bpm-arrow { width:18px; height:14px; border:1px solid var(--border); border-left:none; background:var(--surface2);
+      color:var(--text3); font-size:7px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+    .bpm-arrow:first-child { border-radius:0 6px 0 0; }
+    .bpm-arrow:last-child { border-radius:0 0 6px 0; border-top:none; }
+    .bpm-arrow:hover { color:var(--amber); }
+    .sound-toggle { height:28px; padding:0 10px; border-radius:6px; border:1px solid var(--border);
+      background:transparent; color:var(--text2); font-size:10px; font-weight:600; cursor:pointer;
+      font-family:inherit; letter-spacing:0.5px; transition:all 0.15s; }
+    .sound-toggle:hover { border-color:var(--amber); color:var(--amber); }
+
+    /* ═══ DAW ═══ */
+    .seq-wrap { flex:1; overflow-y:auto; overflow-x:hidden; position:relative; }
+    .seq-inner { padding:12px; display:flex; flex-direction:column; gap:4px; }
+    .seq-empty { display:flex; align-items:center; justify-content:center; min-height:200px; }
+    .note-row { display:flex; align-items:center; gap:8px; padding:4px 8px; border-radius:6px;
+      background:var(--surface2); border:1px solid var(--border); min-height:40px; transition:all 0.15s; }
+    .note-row.playing { border-color:var(--amber); background:rgba(212,145,42,0.08); }
+    .note-char { font-size:12px; color:var(--text2); width:20px; text-align:center; flex-shrink:0; }
+    .note-cell { font-size:20px; color:var(--text); flex-shrink:0; width:24px; text-align:center; }
+    .note-pitch { font-size:13px; font-weight:600; color:var(--amber); min-width:36px; flex-shrink:0; }
+    .note-bar { flex:1; height:20px; border-radius:3px; background:var(--amber-dim); position:relative; overflow:hidden; }
+    .note-bar-fill { height:100%; border-radius:3px; background:var(--amber); opacity:0.6; transition:width 0.1s; }
+    .note-vel { font-size:9px; color:var(--text3); width:20px; text-align:center; cursor:pointer; flex-shrink:0; }
+    .note-vel:hover { color:var(--amber); }
+    .note-gap { height:2px; background:var(--border); border-radius:1px; margin:2px 40px; }
+
+    /* ═══ INFO POPUP ═══ */
+    .info-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:100; display:none;
+      align-items:center; justify-content:center; }
+    .info-overlay.open { display:flex; }
+    .info-card { background:var(--surface); border:1px solid var(--border); border-radius:12px;
+      padding:24px; max-width:400px; width:90%; max-height:80vh; overflow-y:auto; }
+    .info-card h3 { font-size:14px; letter-spacing:1px; margin-bottom:16px; color:var(--amber); }
+    .info-entry { margin-bottom:12px; }
+    .info-entry-label { font-size:12px; font-weight:600; margin-bottom:2px; }
+    .info-entry-desc { font-size:11px; color:var(--text2); line-height:1.5; }
+    .info-close { width:100%; margin-top:16px; padding:8px; border-radius:6px; border:1px solid var(--border);
+      background:transparent; color:var(--text2); cursor:pointer; font-family:inherit; font-size:12px; }
+  </style>
+</head>
+<body>
+
+  <div class="top-bar">
+    <button class="back-btn" onclick="window.location.href='index.html'" title="Back">‹</button>
+    <div class="app-title" id="appTitle">SONIC<span>BRAILLE</span></div>
+    <button class="layout-toggle" id="layoutToggle" title="Toggle layout">
+      <svg id="icoDesktop" viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor">
+        <path d="M3 4h18a1 1 0 011 1v11a1 1 0 01-1 1H3a1 1 0 01-1-1V5a1 1 0 011-1zm1 2v9h16V6H4zm4 13h8v1H8v-1z"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="input-row">
+    <textarea class="text-input" id="textInput" placeholder="type here…" autocomplete="off"
+      spellcheck="false" rows="1"></textarea>
+    <button class="math-toggle" id="mathToggle" title="Show derivation">{ }</button>
+  </div>
+
+  <div class="preview-wrap" id="previewWrap">
+    <div class="preview-inner" id="previewInner"></div>
+  </div>
+
+  <div class="scale-bar" id="scaleBar"></div>
+
+  <div class="ctrl-bar">
+    <button class="play-btn" id="playBtn" title="Play / Stop">
+      <svg class="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+      <svg class="icon-stop" viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>
+    </button>
+    <button class="ctrl-btn" id="loopBtn" title="Loop">⟳</button>
+    <div class="ctrl-group">
+      <span class="ctrl-label">BPM</span>
+      <div class="bpm-wrap">
+        <input type="number" class="bpm-input" id="bpmInput" value="100" min="20" max="300">
+        <div class="bpm-arrows">
+          <button class="bpm-arrow" id="bpmUp">▲</button>
+          <button class="bpm-arrow" id="bpmDown">▼</button>
+        </div>
+      </div>
+    </div>
+    <button class="sound-toggle" id="soundToggle">SINE</button>
+  </div>
+
+  <div class="info-overlay" id="infoOverlay" onclick="if(event.target===this)this.classList.remove('open')">
+    <div class="info-card">
+      <h3>SONIC BRAILLE</h3>
+      <div class="info-entry">
+        <div class="info-entry-label">Encoding</div>
+        <div class="info-entry-desc">Each character is converted to a 6-dot Braille cell. The cell's binary value (0–63) maps to a pitch in your chosen scale.</div>
+      </div>
+      <div class="info-entry">
+        <div class="info-entry-label">Latin</div>
+        <div class="info-entry-desc">International Braille — Grade 1, one cell per letter.</div>
+      </div>
+      <div class="info-entry">
+        <div class="info-entry-label">日本語</div>
+        <div class="info-entry-desc">Japanese Braille (点字) — kana to Braille cells. Dakuten/handakuten as prefix cells.</div>
+      </div>
+      <div class="info-entry">
+        <div class="info-entry-label">한국어</div>
+        <div class="info-entry-desc">Korean Braille (한국 점자) — jamo decomposition, each jamo as a cell.</div>
+      </div>
+      <div class="info-entry">
+        <div class="info-entry-label">中文</div>
+        <div class="info-entry-desc">Chinese Braille (现行盲文) — pinyin-based, initial + final as cells, no tones.</div>
+      </div>
+      <div class="info-entry">
+        <div class="info-entry-label">Pitch Mapping</div>
+        <div class="info-entry-desc">binary value % scale_size → degree, ⌊value / scale_size⌋ → octave offset, clamped to range. Toggle { } to see full derivation.</div>
+      </div>
+      <button class="info-close" onclick="document.getElementById('infoOverlay').classList.remove('open')">CLOSE</button>
+    </div>
+  </div>
+
+  <div class="seq-wrap" id="seqWrap">
+    <div class="seq-inner" id="seqInner">
+      <div class="seq-empty" id="seqEmpty">
+        <div style="opacity:0.15;color:var(--amber);font-size:14px">type here…</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ═══ NOTE NAMES ═══ */
+    const NOTE_NAMES = ['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','B'];
+    const SCALE_PRESETS = {
+      'Major':[0,2,4,5,7,9,11], 'Minor':[0,2,3,5,7,8,10], 'Pentatonic':[0,2,4,7,9],
+      'Min Pent':[0,3,5,7,10], 'Blues':[0,3,5,6,7,10], 'Dorian':[0,2,3,5,7,9,10],
+      'Mixolydian':[0,2,4,5,7,9,10], 'Lydian':[0,2,4,6,7,9,11], 'Phrygian':[0,1,3,5,7,8,10],
+      'Whole Tone':[0,2,4,6,8,10], 'Octatonic':[0,1,3,4,6,7,9,10], 'Chromatic':[0,1,2,3,4,5,6,7,8,9,10,11]
+    };
+    const KNOWN_SCALES = {};
+    for (const [name, pcs] of Object.entries(SCALE_PRESETS)) {
+      for (let t = 0; t < 12; t++) {
+        const key = pcs.map(p => (p + t) % 12).sort((a,b) => a - b).join(',');
+        if (!KNOWN_SCALES[key]) KNOWN_SCALES[key] = NOTE_NAMES[t] + ' ' + name;
+      }
+    }
+
+    /* ═══ STATE ═══ */
+    let activePC = new Set([0,2,4,5,7,9,11]); /* C Major default */
+    let baseOct = 3, octSpan = 3;
+    let bpm = 100, isLooping = false, isPlaying = false, playTimeouts = [];
+    let showMath = false;
+    let waveType = 'sine';
+    const WAVES = ['sine','triangle','square','sawtooth'];
+    let waveIdx = 0;
+    let sequence = []; /* [{char, braille (unicode), dots (array), binary, pitch, octave, noteName, script}] */
+    let isComposing = false;
+
+    /* ═══ INTERNATIONAL BRAILLE (Grade 1) ═══ */
+    const BRAILLE_LATIN = {};
+    /* a-z: standard international braille dots */
+    const ALPHA_DOTS = [
+      [1],[1,2],[1,4],[1,4,5],[1,5],[1,2,4],[1,2,4,5],[1,2,5],[2,4],[2,4,5], /* a-j */
+      [1,3],[1,2,3],[1,3,4],[1,3,4,5],[1,3,5],[1,2,3,4],[1,2,3,4,5],[1,2,3,5],[2,3,4],[2,3,4,5], /* k-t */
+      [1,3,6],[1,2,3,6],[2,4,5,6],[1,3,4,6],[1,3,4,5,6],[1,3,5,6] /* u-z */
+    ];
+    'abcdefghijklmnopqrstuvwxyz'.split('').forEach((ch,i) => {
+      BRAILLE_LATIN[ch] = ALPHA_DOTS[i];
+      BRAILLE_LATIN[ch.toUpperCase()] = ALPHA_DOTS[i];
+    });
+    /* digits: same as a-j with prefix indicator (we skip prefix for simplicity) */
+    '1234567890'.split('').forEach((d,i) => {
+      BRAILLE_LATIN[d] = ALPHA_DOTS[i];
+    });
+    /* common punctuation */
+    BRAILLE_LATIN['.'] = [2,5,6]; BRAILLE_LATIN[','] = [2]; BRAILLE_LATIN['!'] = [2,3,5];
+    BRAILLE_LATIN['?'] = [2,3,6]; BRAILLE_LATIN[';'] = [2,3]; BRAILLE_LATIN[':'] = [2,5];
+    BRAILLE_LATIN['-'] = [3,6]; BRAILLE_LATIN["'"] = [3]; BRAILLE_LATIN['"'] = [2,3,5,6];
+
+    /* ═══ JAPANESE BRAILLE (点字) ═══ */
+    const BRAILLE_JA = {};
+    /* vowels */
+    const JA_V = {'ア':[1],'イ':[1,2],'ウ':[1,4],'エ':[1,2,4],'オ':[2,4]};
+    /* consonant prefixes: k,s,t,n,h,m,r,w + vowel patterns */
+    const JA_CONS = {
+      'カ':[[6],[1]],'キ':[[6],[1,2]],'ク':[[6],[1,4]],'ケ':[[6],[1,2,4]],'コ':[[6],[2,4]],
+      'サ':[[5,6],[1]],'シ':[[5,6],[1,2]],'ス':[[5,6],[1,4]],'セ':[[5,6],[1,2,4]],'ソ':[[5,6],[2,4]],
+      'タ':[[3,5],[1]],'チ':[[3,5],[1,2]],'ツ':[[3,5],[1,4]],'テ':[[3,5],[1,2,4]],'ト':[[3,5],[2,4]],
+      'ナ':[[3],[1]],'ニ':[[3],[1,2]],'ヌ':[[3],[1,4]],'ネ':[[3],[1,2,4]],'ノ':[[3],[2,4]],
+      'ハ':[[3,6],[1]],'ヒ':[[3,6],[1,2]],'フ':[[3,6],[1,4]],'ヘ':[[3,6],[1,2,4]],'ホ':[[3,6],[2,4]],
+      'マ':[[3,5,6],[1]],'ミ':[[3,5,6],[1,2]],'ム':[[3,5,6],[1,4]],'メ':[[3,5,6],[1,2,4]],'モ':[[3,5,6],[2,4]],
+      'ラ':[[5],[1]],'リ':[[5],[1,2]],'ル':[[5],[1,4]],'レ':[[5],[1,2,4]],'ロ':[[5],[2,4]],
+      'ワ':[[3],[1]],'ヲ':[[3],[2,4]],
+      'ヤ':[[3,4],[1]],'ユ':[[3,4],[1,4]],'ヨ':[[3,4],[2,4]],
+      'ン':[[3,5,6]],
+    };
+    /* vowels are single cell */
+    for (const [k,v] of Object.entries(JA_V)) BRAILLE_JA[k] = [v];
+    /* consonants are multi-cell */
+    for (const [k,v] of Object.entries(JA_CONS)) BRAILLE_JA[k] = v;
+    /* dakuten prefix: dot 5 before base */
+    const DAKU_MAP = {
+      'ガ':'カ','ギ':'キ','グ':'ク','ゲ':'ケ','ゴ':'コ',
+      'ザ':'サ','ジ':'シ','ズ':'ス','ゼ':'セ','ゾ':'ソ',
+      'ダ':'タ','ヂ':'チ','ヅ':'ツ','デ':'テ','ド':'ト',
+      'バ':'ハ','ビ':'ヒ','ブ':'フ','ベ':'ヘ','ボ':'ホ','ヴ':'ウ'
+    };
+    for (const [voiced, base] of Object.entries(DAKU_MAP)) {
+      const baseCells = BRAILLE_JA[base] || [[1]];
+      BRAILLE_JA[voiced] = [[5], ...baseCells]; /* dot 5 prefix for dakuten */
+    }
+    /* handakuten prefix: dot 6 before base */
+    const HANDAKU_MAP = {'パ':'ハ','ピ':'ヒ','プ':'フ','ペ':'ヘ','ポ':'ホ'};
+    for (const [hv, base] of Object.entries(HANDAKU_MAP)) {
+      const baseCells = BRAILLE_JA[base] || [[1]];
+      BRAILLE_JA[hv] = [[6], ...baseCells];
+    }
+    /* chōonpu */
+    BRAILLE_JA['ー'] = [[2,5]];
+    /* small kana → same as full */
+    'ッツ,ャヤ,ュユ,ョヨ,ァア,ィイ,ゥウ,ェエ,ォオ'.split(',').forEach(p => {
+      if (BRAILLE_JA[p[1]]) BRAILLE_JA[p[0]] = BRAILLE_JA[p[1]];
+    });
+    /* Build hiragana → katakana mapping */
+    const HIRA2KATA = {};
+    for (let i = 0x3041; i <= 0x3096; i++) HIRA2KATA[String.fromCharCode(i)] = String.fromCharCode(i + 0x60);
+
+    /* ═══ KOREAN BRAILLE (한국 점자) ═══ */
+    const KR_INITIALS = ['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
+    const KR_MEDIALS = ['ㅏ','ㅐ','ㅑ','ㅒ','ㅓ','ㅔ','ㅕ','ㅖ','ㅗ','ㅘ','ㅙ','ㅚ','ㅛ','ㅜ','ㅝ','ㅞ','ㅟ','ㅠ','ㅡ','ㅢ','ㅣ'];
+    const KR_FINALS = ['','ㄱ','ㄲ','ㄳ','ㄴ','ㄵ','ㄶ','ㄷ','ㄹ','ㄺ','ㄻ','ㄼ','ㄽ','ㄾ','ㄿ','ㅀ','ㅁ','ㅂ','ㅄ','ㅅ','ㅆ','ㅇ','ㅈ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
+    const KR_BR_INI = {
+      'ㄱ':[4],'ㄲ':[4,4],'ㄴ':[1,4],'ㄷ':[2,4],'ㄸ':[2,4,2,4],'ㄹ':[5],'ㅁ':[1,5],
+      'ㅂ':[4,5],'ㅃ':[4,5,4,5],'ㅅ':[6],'ㅆ':[6,6],'ㅇ':[1,2,4,5],'ㅈ':[4,6],
+      'ㅉ':[4,6,4,6],'ㅊ':[5,6],'ㅋ':[1,2,4],'ㅌ':[1,2,5],'ㅍ':[1,4,5],'ㅎ':[2,4,5]
+    };
+    const KR_BR_MED = {
+      'ㅏ':[1,2,6],'ㅐ':[1,2,3,5],'ㅑ':[3,4,6],'ㅒ':[3,4,5,6],'ㅓ':[2,3,4],'ㅔ':[1,3,4,5],
+      'ㅕ':[1,5,6],'ㅖ':[3,4],'ㅗ':[1,3,6],'ㅘ':[1,2,3,6],'ㅙ':[1,2,3,5,6],'ㅚ':[1,3,4,5,6],
+      'ㅛ':[3,4,6],'ㅜ':[1,3,4],'ㅝ':[1,2,3,4],'ㅞ':[1,2,3,4,5],'ㅟ':[1,3,4,5,6],
+      'ㅠ':[1,4,6],'ㅡ':[2,4,6],'ㅢ':[2,4,5,6],'ㅣ':[1,3,5]
+    };
+    const KR_BR_FIN = {
+      'ㄱ':[1],'ㄲ':[1,1],'ㄳ':[1,3],'ㄴ':[2,5],'ㄵ':[2,5,1,2],'ㄶ':[2,5,3,5,6],
+      'ㄷ':[3,5],'ㄹ':[2],'ㄺ':[2,1],'ㄻ':[2,2,6],'ㄼ':[2,1,2],'ㄽ':[2,3],
+      'ㄾ':[2,2,3,5,6],'ㄿ':[2,2,5,6],'ㅀ':[2,3,5,6],'ㅁ':[2,6],
+      'ㅂ':[1,2],'ㅄ':[1,2,3],'ㅅ':[3],'ㅆ':[3,3],'ㅇ':[2,3,5,6],
+      'ㅈ':[1,3],'ㅊ':[1,2,3,5,6],'ㅋ':[2,3,5],'ㅌ':[2,3,6],'ㅍ':[2,5,6],'ㅎ':[3,5,6]
+    };
+
+    function decomposeKorean(ch) {
+      const code = ch.charCodeAt(0) - 0xAC00;
+      if (code < 0 || code > 11171) return null;
+      const fi = code % 28, mid = ((code - fi) / 28) % 21, ini = Math.floor((code - fi) / 28 / 21);
+      return { ini: KR_INITIALS[ini], med: KR_MEDIALS[mid], fin: KR_FINALS[fi] };
+    }
+
+    /* ═══ CHINESE BRAILLE (pinyin) ═══ */
+    const PINYIN_MAP = {
+      '的':'de','一':'yi','是':'shi','不':'bu','了':'le','在':'zai','人':'ren','有':'you',
+      '我':'wo','他':'ta','这':'zhe','中':'zhong','大':'da','来':'lai','上':'shang','个':'ge',
+      '国':'guo','到':'dao','说':'shuo','们':'men','为':'wei','和':'he','你':'ni','地':'di',
+      '出':'chu','会':'hui','时':'shi','要':'yao','也':'ye','子':'zi','得':'de','就':'jiu',
+      '那':'na','着':'zhe','下':'xia','自':'zi','之':'zhi','年':'nian','过':'guo','后':'hou',
+      '作':'zuo','里':'li','用':'yong','道':'dao','行':'xing','所':'suo','然':'ran','家':'jia',
+      '种':'zhong','事':'shi','成':'cheng','方':'fang','多':'duo','经':'jing','去':'qu',
+      '法':'fa','学':'xue','如':'ru','都':'dou','同':'tong','现':'xian','当':'dang','没':'mei',
+      '动':'dong','面':'mian','起':'qi','看':'kan','定':'ding','天':'tian','分':'fen',
+      '还':'hai','进':'jin','好':'hao','小':'xiao','日':'ri','三':'san','月':'yue',
+      '明':'ming','老':'lao','四':'si','新':'xin','花':'hua','山':'shan','金':'jin','木':'mu',
+      '火':'huo','土':'tu','风':'feng','雨':'yu','雪':'xue','云':'yun','男':'nan','女':'nv',
+      '春':'chun','夏':'xia','秋':'qiu','冬':'dong','东':'dong','南':'nan','西':'xi','北':'bei',
+      '水':'shui','五':'wu','二':'er','六':'liu','七':'qi','八':'ba','九':'jiu','十':'shi',
+      '百':'bai','千':'qian','万':'wan','京':'jing','港':'gang','台':'tai','曜':'yao',
+      '食':'shi','茶':'cha','酒':'jiu','肉':'rou','米':'mi','星':'xing','空':'kong',
+      '安':'an','平':'ping','战':'zhan','爱':'ai','心':'xin','王':'wang','李':'li'
+    };
+    /* Trad variants */
+    '這zhe,來lai,國guo,說shuo,們men,為wei,會hui,時shi,過guo,後hou,種zhong,經jing,學xue,現xian,當dang,沒mei,動dong,還hai,進jin,開kai,從cong,實shi,長chang,將jiang,兩liang,門men,點dian,問wen,無wu,話hua,東dong,風feng,雲yun'.split(',').forEach(p => {
+      PINYIN_MAP[p[0]] = p.slice(1);
+    });
+
+    /* Pinyin initial → braille dots */
+    const PY_INITIALS = {
+      'b':[1,2],'p':[1,2,3,4],'m':[1,3,4],'f':[1,2,4],
+      'd':[1,4,5],'t':[1,2,4,5],'n':[1,3,4,5],'l':[1,2,3],
+      'g':[1,2,4,5],'k':[1,4],'h':[1,2,5],
+      'j':[3,5],'q':[1,2,3,5],'x':[3,4],
+      'zh':[1,3,4,6],'ch':[1,2,3,6],'sh':[1,5,6],'r':[2,4,6],
+      'z':[1,3,5,6],'c':[1,4,6],'s':[2,3,4]
+    };
+    const PY_FINALS = {
+      'a':[1],'o':[1,3,5],'e':[1,5],'i':[2,4],'u':[1,2,4,5,6],'v':[1,2,3,4,5,6],
+      'ai':[2,4,6],'ei':[1,4,6],'ao':[2,3,5],'ou':[1,2,3,5,6],
+      'an':[1,6],'en':[1,3,5,6],'ang':[2,3,5,6],'eng':[1,2,4,6],'ong':[2,5,6],
+      'ia':[1,2,4,6],'ie':[1,2,6],'iao':[2,3,4,6],'iu':[2,4,5,6],
+      'ian':[2,3,4,5,6],'in':[2,3,6],'iang':[2,3,4,5],'ing':[3,4,5,6],'iong':[3,4,5],
+      'ua':[1,2,3,4,5],'uo':[1,3,4,5,6],'uai':[1,3],'ui':[2,3,4,5],
+      'uan':[1,2,5,6],'un':[2,5],'uang':[1,2,3,4,6],'ue':[3,4,6],'er':[1,2,4,5]
+    };
+
+    function pinyinToBraille(py) {
+      if (!py) return [];
+      /* try longest initial match */
+      let ini = '', fin = py;
+      for (const k of ['zh','ch','sh','b','p','m','f','d','t','n','l','g','k','h','j','q','x','r','z','c','s']) {
+        if (py.startsWith(k)) { ini = k; fin = py.slice(k.length); break; }
+      }
+      /* handle special cases */
+      if (fin === 'ü' || fin === 'nv' || fin === 'lv') fin = 'v';
+      if (!fin && ini) fin = ini === 'r' ? 'i' : 'e'; /* standalone consonant fallback */
+      const cells = [];
+      if (ini && PY_INITIALS[ini]) cells.push(PY_INITIALS[ini]);
+      /* try longest final match */
+      let matched = false;
+      for (let len = Math.min(fin.length, 4); len >= 1; len--) {
+        const sub = fin.slice(0, len);
+        if (PY_FINALS[sub]) { cells.push(PY_FINALS[sub]); matched = true; break; }
+      }
+      if (!matched && fin) {
+        /* encode each letter as latin braille fallback */
+        for (const c of fin) { if (BRAILLE_LATIN[c]) cells.push(BRAILLE_LATIN[c]); }
+      }
+      return cells.length ? cells : [[1]]; /* fallback */
+    }
+
+    /* ═══ SCRIPT DETECTION ═══ */
+    function charScript(ch) {
+      const c = ch.charCodeAt(0);
+      if (c >= 0x3040 && c <= 0x309F) return 'ja';
+      if (c >= 0x30A0 && c <= 0x30FF) return 'ja';
+      if (c === 0x3001 || c === 0x3002) return 'ja';
+      if (c >= 0x4E00 && c <= 0x9FFF) return 'zh';
+      if (c >= 0x3400 && c <= 0x4DBF) return 'zh';
+      if (c >= 0xAC00 && c <= 0xD7AF) return 'ko';
+      return 'en';
+    }
+
+    /* ═══ ENCODE CHARACTER → BRAILLE CELLS ═══ */
+    function charToBrailleCells(ch) {
+      const script = charScript(ch);
+      if (script === 'ja') {
+        let kata = ch;
+        if (HIRA2KATA[ch]) kata = HIRA2KATA[ch];
+        if (BRAILLE_JA[kata]) return { cells: BRAILLE_JA[kata], script: 'ja' };
+        return { cells: [[1]], script: 'ja' }; /* fallback */
+      }
+      if (script === 'ko') {
+        const d = decomposeKorean(ch);
+        if (!d) return { cells: [[1]], script: 'ko' };
+        const cells = [];
+        if (KR_BR_INI[d.ini]) cells.push(KR_BR_INI[d.ini]);
+        if (KR_BR_MED[d.med]) cells.push(KR_BR_MED[d.med]);
+        if (d.fin && KR_BR_FIN[d.fin]) cells.push(KR_BR_FIN[d.fin]);
+        return { cells: cells.length ? cells : [[1]], script: 'ko' };
+      }
+      if (script === 'zh') {
+        const py = PINYIN_MAP[ch];
+        if (py) return { cells: pinyinToBraille(py), script: 'zh', pinyin: py };
+        return { cells: [[1]], script: 'zh' };
+      }
+      /* Latin / other */
+      const upper = ch.toUpperCase();
+      if (BRAILLE_LATIN[upper]) return { cells: [BRAILLE_LATIN[upper]], script: 'en' };
+      if (BRAILLE_LATIN[ch]) return { cells: [BRAILLE_LATIN[ch]], script: 'en' };
+      return { cells: [[1]], script: 'en' };
+    }
+
+    /* ═══ DOTS → BINARY / UNICODE ═══ */
+    function dotsToBinary(dots) {
+      let val = 0;
+      for (const d of dots) val |= (1 << (d - 1));
+      return val;
+    }
+    function dotsToUnicode(dots) {
+      return String.fromCharCode(0x2800 + dotsToBinary(dots));
+    }
+
+    /* ═══ PITCH MAPPING ═══ */
+    function getScale() {
+      const pcs = [...activePC].sort((a,b) => a - b);
+      if (pcs.length === 0) return [0]; /* safety */
+      const pitches = [];
+      for (let oct = 0; oct < octSpan; oct++) {
+        for (const pc of pcs) pitches.push(pc + (baseOct + oct) * 12);
+      }
+      return pitches;
+    }
+
+    function binaryToPitch(val) {
+      const scale = getScale();
+      const idx = val % scale.length;
+      const midi = scale[idx];
+      const oct = Math.floor(midi / 12) - 1;
+      const name = NOTE_NAMES[midi % 12] + oct;
+      const freq = 440 * Math.pow(2, (midi - 69) / 12);
+      return { midi, name, freq, idx, scaleLen: scale.length };
+    }
+
+    /* ═══ ENCODE FULL TEXT ═══ */
+    function encodeText(text) {
+      const result = [];
+      for (let i = 0; i < text.length; i++) {
+        const ch = text[i];
+        if (/\s/.test(ch)) { result.push({ type: 'space' }); continue; }
+        const { cells, script, pinyin } = charToBrailleCells(ch);
+        cells.forEach((dots, ci) => {
+          const bin = dotsToBinary(dots);
+          const uni = dotsToUnicode(dots);
+          const pitch = binaryToPitch(bin);
+          result.push({
+            type: 'note', char: ci === 0 ? ch : '', braille: uni, dots, binary: bin,
+            pitch: pitch.midi, noteName: pitch.name, freq: pitch.freq, script,
+            pinyin: ci === 0 ? pinyin : undefined,
+            derivation: `${dots.join('')} → ${bin} → ${bin} % ${pitch.scaleLen} = ${bin % pitch.scaleLen} → ${pitch.name}`,
+            vel: 3
+          });
+        });
+      }
+      return result;
+    }
+
+    /* ═══ SCALE IDENTIFICATION ═══ */
+    function identifyScale() {
+      const pcs = [...activePC].sort((a,b) => a - b);
+      const key = pcs.join(',');
+      return KNOWN_SCALES[key] || (pcs.length + ' notes');
+    }
+
+    /* ═══ RENDER PREVIEW ═══ */
+    function renderPreview(text) {
+      const wrap = document.getElementById('previewWrap');
+      const inner = document.getElementById('previewInner');
+      inner.innerHTML = '';
+      if (!text.trim()) { wrap.classList.remove('has-content'); return; }
+      wrap.classList.add('has-content');
+      sequence = encodeText(text);
+      sequence.forEach(item => {
+        if (item.type === 'space') {
+          inner.appendChild(Object.assign(document.createElement('div'), { className: 'preview-space' }));
+          return;
+        }
+        const col = document.createElement('div'); col.className = 'preview-col';
+        if (item.char) {
+          const ch = document.createElement('div'); ch.className = 'preview-char'; ch.textContent = item.char;
+          col.appendChild(ch);
+        }
+        const cell = document.createElement('div'); cell.className = 'preview-cell'; cell.textContent = item.braille;
+        col.appendChild(cell);
+        const pitch = document.createElement('div'); pitch.className = 'preview-pitch'; pitch.textContent = item.noteName;
+        col.appendChild(pitch);
+        if (showMath) {
+          const math = document.createElement('div'); math.className = 'preview-math'; math.textContent = item.derivation;
+          col.appendChild(math);
+        }
+        inner.appendChild(col);
+      });
+    }
+
+    /* ═══ RENDER DAW ═══ */
+    function renderDAW() {
+      const inner = document.getElementById('seqInner');
+      const empty = document.getElementById('seqEmpty');
+      /* Remove old rows */
+      inner.querySelectorAll('.note-row,.note-gap').forEach(e => e.remove());
+      const notes = sequence.filter(s => s.type === 'note');
+      if (!notes.length) { empty.style.display = 'flex'; return; }
+      empty.style.display = 'none';
+      const VEL = ['pp','mp','f','ff'];
+      notes.forEach((item, idx) => {
+        if (idx > 0 && sequence[sequence.indexOf(item) - 1]?.type === 'space') {
+          const gap = document.createElement('div'); gap.className = 'note-gap';
+          inner.appendChild(gap);
+        }
+        const row = document.createElement('div'); row.className = 'note-row'; row.dataset.idx = idx;
+        const ch = document.createElement('div'); ch.className = 'note-char'; ch.textContent = item.char || '';
+        const cell = document.createElement('div'); cell.className = 'note-cell'; cell.textContent = item.braille;
+        const pitch = document.createElement('div'); pitch.className = 'note-pitch'; pitch.textContent = item.noteName;
+        /* bar width proportional to MIDI value */
+        const bar = document.createElement('div'); bar.className = 'note-bar';
+        const fill = document.createElement('div'); fill.className = 'note-bar-fill';
+        fill.style.width = Math.max(5, (item.binary / 63) * 100) + '%';
+        bar.appendChild(fill);
+        const vel = document.createElement('div'); vel.className = 'note-vel'; vel.textContent = VEL[item.vel];
+        vel.onclick = () => { item.vel = (item.vel + 1) % 4; vel.textContent = VEL[item.vel]; };
+        row.append(ch, cell, pitch, bar, vel);
+        inner.appendChild(row);
+      });
+    }
+
+    /* ═══ BUILD SCALE BAR ═══ */
+    function buildScaleBar() {
+      const bar = document.getElementById('scaleBar');
+      bar.innerHTML = '';
+      const blacks = new Set([1,3,6,8,10]);
+      NOTE_NAMES.forEach((name, i) => {
+        const btn = document.createElement('button'); btn.className = 'pc-btn' + (blacks.has(i) ? ' black' : '');
+        if (activePC.has(i)) btn.classList.add('active');
+        btn.textContent = name.replace('♯','#');
+        btn.onclick = () => { if (activePC.has(i)) activePC.delete(i); else activePC.add(i); buildScaleBar(); doEncode(); };
+        bar.appendChild(btn);
+      });
+      /* separator */
+      bar.appendChild(Object.assign(document.createElement('div'), { className: 'scale-sep' }));
+      /* preset select */
+      const sel = document.createElement('select'); sel.className = 'scale-select';
+      const optNone = document.createElement('option'); optNone.textContent = 'preset'; optNone.value = ''; sel.appendChild(optNone);
+      for (const name of Object.keys(SCALE_PRESETS)) {
+        const opt = document.createElement('option'); opt.value = name; opt.textContent = name; sel.appendChild(opt);
+      }
+      sel.onchange = function() {
+        if (!this.value) return;
+        const pcs = SCALE_PRESETS[this.value];
+        activePC = new Set(pcs);
+        buildScaleBar(); doEncode();
+      };
+      bar.appendChild(sel);
+      bar.appendChild(Object.assign(document.createElement('div'), { className: 'scale-sep' }));
+      /* base octave */
+      const og1 = document.createElement('div'); og1.className = 'oct-group';
+      og1.appendChild(Object.assign(document.createElement('span'), { className: 'oct-label', textContent: 'oct' }));
+      const oi1 = document.createElement('input'); oi1.type = 'number'; oi1.className = 'oct-input';
+      oi1.value = baseOct; oi1.min = 1; oi1.max = 7;
+      oi1.onchange = function() { baseOct = Math.max(1, Math.min(7, parseInt(this.value) || 3)); this.value = baseOct; doEncode(); };
+      og1.appendChild(oi1); bar.appendChild(og1);
+      /* span */
+      const og2 = document.createElement('div'); og2.className = 'oct-group';
+      og2.appendChild(Object.assign(document.createElement('span'), { className: 'oct-label', textContent: 'span' }));
+      const oi2 = document.createElement('input'); oi2.type = 'number'; oi2.className = 'oct-input';
+      oi2.value = octSpan; oi2.min = 1; oi2.max = 5;
+      oi2.onchange = function() { octSpan = Math.max(1, Math.min(5, parseInt(this.value) || 3)); this.value = octSpan; doEncode(); };
+      og2.appendChild(oi2); bar.appendChild(og2);
+      /* scale name */
+      const sn = document.createElement('div'); sn.className = 'scale-name'; sn.textContent = identifyScale();
+      bar.appendChild(sn);
+    }
+
+    /* ═══ AUDIO ═══ */
+    let audioOk = false;
+    async function ensureAudio() { if (!audioOk) { await Tone.start(); audioOk = true; } }
+    function playNote(freq, dur, vel) {
+      const g = [0.08, 0.2, 0.45, 0.8][vel] * 0.5;
+      const s = new Tone.Synth({ oscillator: { type: waveType },
+        envelope: { attack: 0.01, decay: 0.1, sustain: 0.6, release: 0.15 } }).toDestination();
+      s.volume.value = Tone.gainToDb(g);
+      s.triggerAttackRelease(freq, Math.max(0.05, dur - 0.03));
+      setTimeout(() => s.dispose(), (dur + 0.5) * 1000);
+    }
+
+    function stopPlayback() {
+      playTimeouts.forEach(clearTimeout); playTimeouts = [];
+      isPlaying = false; document.body.classList.remove('playing');
+      document.querySelectorAll('.note-row.playing').forEach(r => r.classList.remove('playing'));
+    }
+
+    async function startPlayback() {
+      if (isPlaying) { stopPlayback(); return; }
+      await ensureAudio();
+      const notes = sequence.filter(s => s.type === 'note');
+      if (!notes.length) return;
+      isPlaying = true; document.body.classList.add('playing');
+      const dur = 60 / bpm;
+      function playSeq() {
+        const rows = document.querySelectorAll('.note-row');
+        notes.forEach((n, i) => {
+          const t = setTimeout(() => {
+            rows.forEach(r => r.classList.remove('playing'));
+            if (rows[i]) rows[i].classList.add('playing');
+            playNote(n.freq, dur * 0.9, n.vel);
+            if (i === notes.length - 1) {
+              setTimeout(() => {
+                rows.forEach(r => r.classList.remove('playing'));
+                if (isLooping && isPlaying) playSeq();
+                else stopPlayback();
+              }, dur * 1000);
+            }
+          }, i * dur * 1000);
+          playTimeouts.push(t);
+        });
+      }
+      playSeq();
+    }
+
+    /* ═══ MAIN ═══ */
+    function doEncode() {
+      stopPlayback();
+      const text = document.getElementById('textInput').value;
+      renderPreview(text);
+      renderDAW();
+    }
+
+    function autoResize(el) {
+      el.style.height = 'auto';
+      el.style.height = Math.min(el.scrollHeight, 100) + 'px';
+    }
+
+    /* ═══ INIT ═══ */
+    (function init() {
+      const inp = document.getElementById('textInput');
+      let tmr = null;
+      inp.addEventListener('compositionstart', () => { isComposing = true; });
+      inp.addEventListener('compositionend', () => { isComposing = false; autoResize(inp); clearTimeout(tmr); tmr = setTimeout(doEncode, 200); });
+      inp.oninput = () => { if (!isComposing) { autoResize(inp); clearTimeout(tmr); tmr = setTimeout(doEncode, 200); } };
+
+      document.getElementById('playBtn').onclick = startPlayback;
+      document.getElementById('loopBtn').onclick = function() { isLooping = !isLooping; this.classList.toggle('active', isLooping); };
+
+      const bpmInp = document.getElementById('bpmInput');
+      function setBpm(v) { bpm = Math.max(20, Math.min(300, Math.round(v))); bpmInp.value = bpm; }
+      bpmInp.oninput = () => setBpm(parseInt(bpmInp.value) || 100);
+      document.getElementById('bpmUp').onclick = () => setBpm(bpm + 1);
+      document.getElementById('bpmDown').onclick = () => setBpm(bpm - 1);
+
+      document.getElementById('soundToggle').onclick = function() {
+        waveIdx = (waveIdx + 1) % WAVES.length;
+        waveType = WAVES[waveIdx];
+        this.textContent = waveType.toUpperCase();
+      };
+
+      document.getElementById('mathToggle').onclick = function() {
+        showMath = !showMath;
+        this.classList.toggle('active', showMath);
+        doEncode();
+      };
+
+      document.getElementById('appTitle').onclick = () => {
+        document.getElementById('infoOverlay').classList.add('open');
+      };
+
+      buildScaleBar();
+    })();
+  </script>
+</body>
+</html>
