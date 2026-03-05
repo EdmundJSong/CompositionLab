@@ -39,6 +39,9 @@
     .preview-wrap { display:none; padding:6px 12px; border-bottom:1px solid var(--border); background:var(--surface); flex-shrink:0; overflow-x:auto; }
     .preview-wrap.has-content { display:block; }
     .preview-inner { display:flex; flex-wrap:wrap; gap:2px 10px; }
+    .preview-group { display:flex; flex-direction:column; align-items:center; border:1px solid var(--border); border-radius:6px; padding:4px 6px 2px; background:rgba(255,255,255,0.015); }
+    .preview-group-char { font-size:14px; font-weight:600; color:var(--text); line-height:1.3; margin-bottom:2px; }
+    .preview-group-cells { display:flex; gap:4px; }
     .preview-col { display:flex; flex-direction:column; align-items:center; min-width:20px; }
     .preview-char { font-size:14px; font-weight:600; color:var(--text); line-height:1.3; }
     .preview-braille { font-family:'JetBrains Mono',monospace; font-size:16px; color:var(--text2); line-height:1; margin-top:2px; }
@@ -107,9 +110,9 @@
     .b-dot.on { background:var(--amber); box-shadow:0 0 4px var(--amber-glow); }
     
     .mel-v { border-radius:6px; cursor:pointer; transition:all 0.15s; display:flex; align-items:center; gap:12px; padding:6px 12px; background:var(--surface2); border:1px solid var(--border); min-height:44px; touch-action:manipulation; }
-    .mel-v[data-vel="0"] { opacity:0.3; }
-    .mel-v[data-vel="1"] { opacity:0.55; }
-    .mel-v[data-vel="2"] { opacity:0.8; }
+    .mel-v[data-vel="0"] { opacity:0.15; }
+    .mel-v[data-vel="1"] { opacity:0.4; }
+    .mel-v[data-vel="2"] { opacity:0.7; }
     .mel-v[data-vel="3"] { opacity:1.0; }
     .mel-v.playing { border-color:var(--amber); background:var(--amber-dim); box-shadow:0 0 16px var(--amber-glow); }
     .mel-v-content { display:flex; flex-direction:column; align-items:flex-end; margin-left:auto; }
@@ -140,9 +143,9 @@
     .track-lane { flex:1; position:relative; min-width:0; }
     
     .mel-h { position:absolute; top:4px; height:56px; border-radius:6px; cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:center; transition:all 0.15s; background:var(--surface2); border:1px solid var(--border); }
-    .mel-h[data-vel="0"] { opacity:0.3; }
-    .mel-h[data-vel="1"] { opacity:0.55; }
-    .mel-h[data-vel="2"] { opacity:0.8; }
+    .mel-h[data-vel="0"] { opacity:0.15; }
+    .mel-h[data-vel="1"] { opacity:0.4; }
+    .mel-h[data-vel="2"] { opacity:0.7; }
     .mel-h[data-vel="3"] { opacity:1.0; }
     .mel-h.playing { border-color:var(--amber); background:var(--amber-dim); box-shadow:0 0 16px var(--amber-glow); }
     .mel-h-pitch { font-size:10px; font-weight:600; color:var(--amber); margin-top:4px; }
@@ -260,9 +263,7 @@
   <!-- VERTICAL (mobile) -->
   <div class="seq-v-wrap" id="seqVWrap">
     <div class="seq-v" id="seqV">
-      <div class="seq-empty" id="seqEmptyV">
-        <div style="opacity:0.15;color:var(--amber);font-size:14px">type here…</div>
-      </div>
+      <div class="seq-empty" id="seqEmptyV"></div>
       <div class="playhead-v" id="playheadV"></div>
     </div>
   </div>
@@ -277,9 +278,7 @@
     </div>
     <div class="tracks-scroll" id="tracksScroll">
       <div class="tracks-inner" id="tracksInner">
-        <div class="seq-empty" id="seqEmptyH" style="position:relative;min-height:200px">
-          <div style="opacity:0.15;color:var(--amber);font-size:14px">type here…</div>
-        </div>
+        <div class="seq-empty" id="seqEmptyH" style="position:relative;min-height:200px"></div>
       </div>
       <div class="playhead-h" id="playheadH"></div>
     </div>
@@ -615,32 +614,57 @@
       if (!text.trim()) { wrap.classList.remove('has-content'); return; }
       wrap.classList.add('has-content');
       sequence = encodeText(text);
-      
+
+      /* Group by charIdx */
+      const groups = [];
+      let curGroup = null;
       sequence.forEach(item => {
-        if (item.type === 'space') {
+        if (item.type === 'space') { groups.push({ type: 'space' }); curGroup = null; return; }
+        if (!curGroup || item.charIdx !== curGroup.charIdx) {
+          curGroup = { charIdx: item.charIdx, char: item.char, items: [item] };
+          groups.push(curGroup);
+        } else {
+          curGroup.items.push(item);
+        }
+      });
+
+      groups.forEach(g => {
+        if (g.type === 'space') {
           inner.appendChild(Object.assign(document.createElement('div'), { className: 'preview-space' }));
           return;
         }
-        const col = document.createElement('div'); col.className = 'preview-col';
-        
-        const ch = document.createElement('div'); ch.className = 'preview-char'; ch.textContent = item.char;
-        col.appendChild(ch);
-        
-        const cell = document.createElement('div'); cell.className = 'preview-braille'; cell.textContent = item.braille;
-        col.appendChild(cell);
-        
-        const pitch = document.createElement('div'); pitch.className = 'preview-pitch'; pitch.textContent = item.noteName;
-        col.appendChild(pitch);
-        
-        const math = document.createElement('div'); math.className = 'preview-math'; math.textContent = item.derivation;
-        col.appendChild(math);
-        
-        inner.appendChild(col);
+        const multiCell = g.items.length > 1;
+        const container = multiCell ? document.createElement('div') : null;
+        if (container) {
+          container.className = 'preview-group';
+          const charLabel = document.createElement('div'); charLabel.className = 'preview-group-char'; charLabel.textContent = g.char;
+          container.appendChild(charLabel);
+        }
+        const cellsWrap = multiCell ? document.createElement('div') : null;
+        if (cellsWrap) cellsWrap.className = 'preview-group-cells';
+
+        g.items.forEach(item => {
+          const col = document.createElement('div'); col.className = 'preview-col';
+          if (!multiCell && item.char) {
+            const ch = document.createElement('div'); ch.className = 'preview-char'; ch.textContent = item.char;
+            col.appendChild(ch);
+          }
+          const cell = document.createElement('div'); cell.className = 'preview-braille'; cell.textContent = item.braille;
+          col.appendChild(cell);
+          const pitch = document.createElement('div'); pitch.className = 'preview-pitch'; pitch.textContent = item.noteName;
+          col.appendChild(pitch);
+          const math = document.createElement('div'); math.className = 'preview-math'; math.textContent = item.derivation;
+          col.appendChild(math);
+          if (cellsWrap) cellsWrap.appendChild(col);
+          else inner.appendChild(col);
+        });
+
+        if (container) { container.appendChild(cellsWrap); inner.appendChild(container); }
       });
     }
 
     /* ═══ STATE EXTRAS ═══ */
-    const VEL = ['pp','mp','f','ff'];
+    const VEL = ['pp','p','f','ff'];
     let elRefsV = [], elRefsH = [];
     const PX_PER_UNIT = 48;
     let layoutMode = 'desktop';
@@ -692,7 +716,7 @@
       elRefsH = []; inner.innerHTML = ''; rulerInner.innerHTML = '';
       const notes = sequence.filter(s => s.type === 'note');
       if (!notes.length) {
-        inner.innerHTML = '<div class="seq-empty" id="seqEmptyH" style="position:relative;min-height:200px"><div style="opacity:0.15;color:var(--amber);font-size:14px">type here…</div></div>';
+        inner.innerHTML = '<div class="seq-empty" id="seqEmptyH" style="position:relative;min-height:200px"></div>';
         return;
       }
       
@@ -797,6 +821,7 @@
       };
       bar.appendChild(sel);
       bar.appendChild(Object.assign(document.createElement('div'), { className: 'scale-sep' }));
+
       const og1 = document.createElement('div'); og1.className = 'oct-group';
       og1.appendChild(Object.assign(document.createElement('span'), { className: 'oct-label', textContent: 'Octave' }));
       const oi1 = document.createElement('input'); oi1.type = 'number'; oi1.className = 'oct-input';
@@ -910,7 +935,6 @@
       const text = document.getElementById('textInput').value;
       renderPreview(text);
       renderAll();
-      updateGhostVisibility();
     }
 
     function autoResize(el) {
@@ -926,23 +950,9 @@
       else icon.innerHTML = '<rect x="5" y="1" width="14" height="22" rx="3"/><circle cx="12" cy="19" r="1" fill="currentColor" stroke="none"/>';
     }
     
-    /* ── Ghost ── */
+    /* ── Cycling placeholder ── */
     const GHOST_PHRASES = ['type here…', '在此输入…', '在此輸入…', 'ここに入力…', '여기에 입력…'];
     let ghostIdx = 0;
-    function cycleGhost() {
-      const gV = document.getElementById('seqEmptyV');
-      const gH = document.getElementById('seqEmptyH');
-      const txt = '<div style="opacity:0.15;color:var(--amber);font-size:14px">' + GHOST_PHRASES[ghostIdx] + '</div>';
-      if (gV) gV.innerHTML = txt;
-      if (gH) gH.innerHTML = txt;
-      ghostIdx = (ghostIdx + 1) % GHOST_PHRASES.length;
-    }
-    function updateGhostVisibility() {
-      const gV = document.getElementById('seqEmptyV'), gH = document.getElementById('seqEmptyH');
-      const hasContent = document.getElementById('textInput').value.trim().length > 0;
-      if (gV) gV.style.display = hasContent ? 'none' : 'flex';
-      if (gH) gH.style.display = hasContent ? 'none' : 'flex';
-    }
 
     (function init() {
       const params = new URLSearchParams(window.location.search);
@@ -962,9 +972,20 @@
 
       const bpmInp = document.getElementById('bpmInput');
       function setBpm(v) { bpm = Math.max(20, Math.min(300, Math.round(v))); bpmInp.value = bpm; }
-      bpmInp.oninput = () => setBpm(parseInt(bpmInp.value) || 100);
-      document.getElementById('bpmUp').onclick = () => setBpm(bpm + 1);
-      document.getElementById('bpmDown').onclick = () => setBpm(bpm - 1);
+      bpmInp.onchange = () => setBpm(parseInt(bpmInp.value) || 100);
+
+      /* BPM arrows with hold-to-repeat */
+      function holdRepeat(btn, delta) {
+        let timer = null, speed = 200;
+        function step() { setBpm(bpm + delta); speed = Math.max(50, speed - 20); timer = setTimeout(step, speed); }
+        function start(e) { e.preventDefault(); setBpm(bpm + delta); speed = 200; timer = setTimeout(step, 400); }
+        function stop() { clearTimeout(timer); timer = null; }
+        btn.addEventListener('mousedown', start); btn.addEventListener('touchstart', start, { passive: false });
+        btn.addEventListener('mouseup', stop); btn.addEventListener('mouseleave', stop);
+        btn.addEventListener('touchend', stop); btn.addEventListener('touchcancel', stop);
+      }
+      holdRepeat(document.getElementById('bpmUp'), 1);
+      holdRepeat(document.getElementById('bpmDown'), -1);
 
       document.getElementById('soundToggle').onclick = function() {
         waveIdx = (waveIdx + 1) % WAVES.length;
@@ -984,7 +1005,8 @@
       };
 
       buildScaleBar();
-      cycleGhost(); setInterval(cycleGhost, 3000);
+      function cyclePlaceholder() { inp.placeholder = GHOST_PHRASES[ghostIdx]; ghostIdx = (ghostIdx + 1) % GHOST_PHRASES.length; }
+      cyclePlaceholder(); setInterval(cyclePlaceholder, 3000);
       if (layoutMode === 'desktop') inp.focus();
     })();
   </script>
