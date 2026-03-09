@@ -837,9 +837,9 @@
 <body class="layout-desktop">
 
   <div class="top-bar">
-    <button class="back-btn" onclick="window.location.href='index.html'" title="Home">‹</button>
-    <div class="app-title" id="appTitle" style="cursor:pointer" title="Encoding info">MORSE<span>SEQ</span></div>
-    <button class="layout-toggle" id="layoutToggle" title="Toggle mobile / desktop">
+    <button class="back-btn" onclick="window.location.href='index.html'" title="Home" aria-label="Back to home">‹</button>
+    <div class="app-title" id="appTitle" style="cursor:pointer" title="Encoding info" aria-label="Show encoding info">MORSE<span>SEQ</span></div>
+    <button class="layout-toggle" id="layoutToggle" title="Toggle mobile / desktop" aria-label="Toggle mobile / desktop layout">
       <svg id="layoutIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
         stroke-linecap="round">
         <rect x="2" y="3" width="20" height="14" rx="2" />
@@ -890,7 +890,7 @@
   </div>
 
   <div class="ctrl-bar">
-    <button class="play-btn" id="playBtn" title="Play / Stop">
+    <button class="play-btn" id="playBtn" title="Play / Stop" aria-label="Play or stop">
       <svg class="icon-play" viewBox="0 0 24 24">
         <path d="M8 5v14l11-7z" />
       </svg>
@@ -898,20 +898,20 @@
         <path d="M6 6h12v12H6z" />
       </svg>
     </button>
-    <button class="ctrl-btn" id="loopBtn" title="Loop">⟳</button>
+    <button class="ctrl-btn" id="loopBtn" title="Loop" aria-label="Toggle loop">⟳</button>
     <div class="ctrl-group">
       <span class="ctrl-label">BPM</span>
       <div class="bpm-wrap">
-        <input type="number" class="bpm-input" id="bpmInput" value="120" min="40" max="300">
+        <input type="number" class="bpm-input" id="bpmInput" value="120" min="40" max="300" aria-label="Beats per minute">
         <div class="bpm-arrows">
-          <button class="bpm-arrow" id="bpmUp">▲</button>
-          <button class="bpm-arrow" id="bpmDown">▼</button>
+          <button class="bpm-arrow" id="bpmUp" aria-label="Increase BPM">▲</button>
+          <button class="bpm-arrow" id="bpmDown" aria-label="Decrease BPM">▼</button>
         </div>
       </div>
     </div>
     <div class="ctrl-group">
       <span class="ctrl-label">NOTE</span>
-      <select class="pitch-select" id="pitchSelect">
+      <select class="pitch-select" id="pitchSelect" aria-label="Base pitch">
         <option value="C3">C3</option>
         <option value="D3">D3</option>
         <option value="E3">E3</option>
@@ -929,7 +929,7 @@
         <option value="C5">C5</option>
       </select>
     </div>
-    <button class="sound-toggle" id="soundToggle">BEEP</button>
+    <button class="sound-toggle" id="soundToggle" aria-label="Toggle sound type">BEEP</button>
   </div>
 
   <!-- VERTICAL (mobile) -->
@@ -1572,6 +1572,10 @@
       }
       cyclePlaceholder();
       setInterval(cyclePlaceholder, 3000);
+
+      /* Stop audio on page leave */
+      document.addEventListener('visibilitychange', () => { if (document.hidden) stopPlayback(); });
+      window.addEventListener('beforeunload', stopPlayback);
 
       if (layoutMode === 'desktop') inp.focus();
     });
