@@ -187,9 +187,9 @@
 <body class="layout-desktop">
 
   <div class="top-bar">
-    <button class="back-btn" onclick="window.location.href='index.html'" title="Back">‹</button>
-    <div class="app-title" id="appTitle">SONIC<span>BRAILLE</span></div>
-    <button class="layout-toggle" id="layoutToggle" title="Toggle layout">
+    <button class="back-btn" onclick="window.location.href='index.html'" title="Back" aria-label="Back to home">‹</button>
+    <div class="app-title" id="appTitle" aria-label="Show encoding info">SONIC<span>BRAILLE</span></div>
+    <button class="layout-toggle" id="layoutToggle" title="Toggle layout" aria-label="Toggle mobile / desktop layout">
       <svg id="layoutIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
         <rect x="2" y="3" width="20" height="14" rx="2" />
         <path d="M8 21h8M12 17v4" />
@@ -199,7 +199,7 @@
 
   <div class="input-row">
     <textarea class="text-input" id="textInput" placeholder="type here…" autocomplete="off" spellcheck="false" rows="1"></textarea>
-    <button class="math-toggle" id="mathToggle" title="Show derivation">{ }</button>
+    <button class="math-toggle" id="mathToggle" title="Show derivation" aria-label="Toggle pitch derivation">{ }</button>
   </div>
 
   <!-- Stacked preview -->
@@ -210,22 +210,22 @@
   <div class="scale-bar" id="scaleBar"></div>
 
   <div class="ctrl-bar">
-    <button class="play-btn" id="playBtn" title="Play / Stop">
+    <button class="play-btn" id="playBtn" title="Play / Stop" aria-label="Play or stop">
       <svg class="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
       <svg class="icon-stop" viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>
     </button>
-    <button class="ctrl-btn" id="loopBtn" title="Loop">⟳</button>
+    <button class="ctrl-btn" id="loopBtn" title="Loop" aria-label="Toggle loop">⟳</button>
     <div class="ctrl-group">
       <span class="ctrl-label">BPM</span>
       <div class="bpm-wrap">
-        <input type="number" class="bpm-input" id="bpmInput" value="100" min="20" max="300">
+        <input type="number" class="bpm-input" id="bpmInput" value="100" min="20" max="300" aria-label="Beats per minute">
         <div class="bpm-arrows">
-          <button class="bpm-arrow" id="bpmUp">▲</button>
-          <button class="bpm-arrow" id="bpmDown">▼</button>
+          <button class="bpm-arrow" id="bpmUp" aria-label="Increase BPM">▲</button>
+          <button class="bpm-arrow" id="bpmDown" aria-label="Decrease BPM">▼</button>
         </div>
       </div>
     </div>
-    <button class="sound-toggle" id="soundToggle">SINE</button>
+    <button class="sound-toggle" id="soundToggle" aria-label="Cycle waveform">SINE</button>
   </div>
 
   <!-- Info popup -->
@@ -808,10 +808,12 @@
         bar.appendChild(btn);
       });
       bar.appendChild(Object.assign(document.createElement('div'), { className: 'scale-sep' }));
-      const sel = document.createElement('select'); sel.className = 'scale-select';
-      const optNone = document.createElement('option'); optNone.textContent = 'preset'; optNone.value = ''; sel.appendChild(optNone);
+      const sel = document.createElement('select'); sel.className = 'scale-select'; sel.setAttribute('aria-label', 'Scale preset');
+      const curName = identifyScale();
+      const optNone = document.createElement('option'); optNone.textContent = curName; optNone.value = ''; sel.appendChild(optNone);
       for (const name of Object.keys(SCALE_PRESETS)) {
-        const opt = document.createElement('option'); opt.value = name; opt.textContent = name; sel.appendChild(opt);
+        const opt = document.createElement('option'); opt.value = name; opt.textContent = name;
+        sel.appendChild(opt);
       }
       sel.onchange = function() {
         if (!this.value) return;
@@ -1007,6 +1009,8 @@
       buildScaleBar();
       function cyclePlaceholder() { inp.placeholder = GHOST_PHRASES[ghostIdx]; ghostIdx = (ghostIdx + 1) % GHOST_PHRASES.length; }
       cyclePlaceholder(); setInterval(cyclePlaceholder, 3000);
+      document.addEventListener('visibilitychange', () => { if (document.hidden) stopPlayback(); });
+      window.addEventListener('beforeunload', stopPlayback);
       if (layoutMode === 'desktop') inp.focus();
     })();
   </script>
